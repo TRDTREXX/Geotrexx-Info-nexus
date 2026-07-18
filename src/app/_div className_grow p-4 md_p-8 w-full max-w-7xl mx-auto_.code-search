@@ -1,0 +1,9 @@
+# Query: <div className="grow p-4 md:p-8 w-full max-w-7xl mx-auto">
+# ContextLines: 1
+
+1 result - 1 file
+
+src\app\page.js:
+  273  
+  274:         <div className="grow p-4 md:p-8 w-full  mx-auto">
+  275            {error && (
