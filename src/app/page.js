@@ -13,9 +13,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState('All News');
-  const [selectedArticle, setSelectedArticle] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSlip, setActiveSlip] = useState(null);
   const [copiedCode, setCopiedCode] = useState(null);
@@ -59,9 +57,8 @@ function DashboardContent() {
     }
   ];
 
-  // Sync state with dynamic parameters
+  // Sync state with dynamic parameters for Admin
   useEffect(() => {
-    const postId = searchParams.get('post');
     const adminStatus = searchParams.get('admin');
 
     if (adminStatus === '1') {
@@ -73,15 +70,7 @@ function DashboardContent() {
     } else if (typeof window !== 'undefined' && localStorage.getItem('geotrexx_admin') === 'true') {
       setIsAdmin(true);
     }
-
-    if (articles.length > 0 && postId) {
-      const matchedArticle = articles.find(a => a.slug === postId || a.id === postId);
-      if (matchedArticle) {
-        setSelectedArticle(matchedArticle);
-        if (matchedArticle.category) setActiveCategory(matchedArticle.category);
-      }
-    }
-  }, [searchParams, articles]);
+  }, [searchParams]);
 
   // Fetch articles from Hygraph CMS
   useEffect(() => {
@@ -137,37 +126,17 @@ function DashboardContent() {
 
   const handleCategoryClick = (cat) => {
     setActiveCategory(cat);
-    setSelectedArticle(null);
     setSearchQuery('');
     setActiveSlip(null);
     setIsSidebarOpen(false);
     if (typeof window !== 'undefined') window.scrollTo(0, 0);
-    router.push('/');
   };
 
-  const handleArticleClick = (article) => {
-    setSelectedArticle(article);
-    if (typeof window !== 'undefined') window.scrollTo(0, 0);
-    router.push(`/?post=${article.slug || article.id}`);
-  };
-
-  
   const handleHomeClick = () => {
     setActiveCategory('All News');
-    setSelectedArticle(null);
     setIsSidebarOpen(false);
     setSearchQuery('');
     if (typeof window !== 'undefined') window.scrollTo(0, 0);
-    router.push('/');
-  };
-
-  const handleCopyLink = () => {
-    if (typeof window !== 'undefined') {
-      const specificLink = `${window.location.origin}/?post=${selectedArticle.slug || selectedArticle.id}`;
-      navigator.clipboard.writeText(specificLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
   };
 
   const handleCopyCode = (code, id) => {
@@ -191,7 +160,7 @@ function DashboardContent() {
       <header className="md:hidden flex items-center justify-between p-4 bg-white border-b-4 border-[#C8102E] sticky top-0 z-50 shadow-md">
         <div className="flex items-center gap-3 cursor-pointer" onClick={handleHomeClick}>
           <div className="w-10 h-10 rounded-full border-2 border-[#C8102E] overflow-hidden bg-white">
-            <img src="/1000447725.png" alt="GEOTREXX Logo" className="w-full h-full object-cover" />
+            <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="w-full h-full object-cover" />
           </div>
           <span className="font-black text-xl tracking-widest uppercase">GEO<span className="text-[#C8102E]">TREXX</span></span>
         </div>
@@ -206,8 +175,8 @@ function DashboardContent() {
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden absolute top-4 right-6 text-2xl text-gray-500 hover:text-gray-900">✕</button>
           
           <div className="w-24 h-24 mx-auto rounded-full border-4 border-[#C8102E] overflow-hidden bg-white mb-4 shadow-lg cursor-pointer hover:scale-105 transition-transform" onClick={handleHomeClick}>
-          
-       <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" style={{ width: '100px', height: 'auto' }} />
+            <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="w-full h-full object-cover" />
+          </div>
           <h1 className="font-black text-2xl tracking-widest text-gray-900 cursor-pointer" onClick={handleHomeClick}>GEO<span className="text-[#C8102E]">TREXX</span></h1>
           <p className="text-xs font-bold text-gray-500 uppercase mt-2 tracking-widest mb-6">Info Nexus</p>
           
@@ -217,7 +186,7 @@ function DashboardContent() {
               type="text" 
               placeholder="Search news..." 
               value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setSelectedArticle(null); }}
+              onChange={(e) => { setSearchQuery(e.target.value); }}
               className="w-full px-4 py-2.5 text-sm font-bold bg-white border-2 border-gray-200 rounded text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#C8102E] transition-all shadow-inner"
             />
           </div>
@@ -232,15 +201,15 @@ function DashboardContent() {
               <div key={cat} className="flex flex-col">
                 <button 
                   onClick={() => handleCategoryClick(cat)} 
-                  className={`text-left px-8 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-200 border-l-4 ${isActive && !selectedArticle ? 'border-[#C8102E] bg-gray-50 text-[#C8102E]' : 'border-transparent text-gray-500 hover:bg-gray-50 hover:text-[#C8102E]'}`}
+                  className={`text-left px-8 py-4 font-bold text-sm tracking-wider uppercase transition-all duration-200 border-l-4 ${isActive ? 'border-[#C8102E] bg-gray-50 text-[#C8102E]' : 'border-transparent text-gray-500 hover:bg-gray-50 hover:text-[#C8102E]'}`}
                 >
                   {cat}
                 </button>
                 {cat === 'Sports' && (
-                  <div className={`overflow-hidden transition-all duration-300 flex flex-col bg-gray-50 ${isSportsGroupActive && !selectedArticle ? 'max-h-32 border-l-4 border-[#C8102E]' : 'max-h-0 border-l-4 border-transparent'}`}>
+                  <div className={`overflow-hidden transition-all duration-300 flex flex-col bg-gray-50 ${isSportsGroupActive ? 'max-h-32 border-l-4 border-[#C8102E]' : 'max-h-0 border-l-4 border-transparent'}`}>
                      <button
                        onClick={() => handleCategoryClick('Codes of the Day')}
-                       className={`w-full text-left pl-14 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${activeCategory === 'Codes of the Day' && !selectedArticle ? 'text-[#C8102E] bg-gray-200' : 'text-gray-500 hover:text-[#C8102E] hover:bg-gray-100'}`}
+                       className={`w-full text-left pl-14 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${activeCategory === 'Codes of the Day' ? 'text-[#C8102E] bg-gray-200' : 'text-gray-500 hover:text-[#C8102E] hover:bg-gray-100'}`}
                      >
                        ↳ Codes of the Day
                      </button>
@@ -264,9 +233,9 @@ function DashboardContent() {
           <div className="grow overflow-hidden whitespace-nowrap">
             <div className="animate-ticker inline-block text-sm font-semibold tracking-wide">
               {articles.map((article, index) => (
-                <span key={index} className="mx-8 hover:text-[#C8102E] cursor-pointer transition-colors" onClick={() => handleArticleClick(article)}>
+                <Link key={index} href={`/post/${article.slug || article.id}`} className="mx-8 hover:text-[#C8102E] cursor-pointer transition-colors">
                   {article.title} <span className="text-gray-600 mx-2">•</span>
-                </span>
+                </Link>
               ))}
             </div>
           </div>
@@ -287,156 +256,106 @@ function DashboardContent() {
           ) : (
             <div className="flex flex-col lg:flex-row gap-8 w-full">
               
-              {/* LEFT COLUMN: MAIN NEWS GRID OR ARTICLE */}
+              {/* LEFT COLUMN: MAIN NEWS GRID */}
               <div className="w-full lg:w-8/12 xl:w-9/12">
-                {selectedArticle ? (
-                  /* --- FULL ARTICLE READING VIEW --- */
-                  <article className="bg-white rounded shadow-sm overflow-hidden border-t-4 border-[#C8102E] animate-fade-in w-full">
-                    <div className="p-6 md:p-10">
-                      <button 
-                        onClick={() => { setSelectedArticle(null); router.push('/'); }} 
-                        className="mb-8 flex items-center text-xs font-black uppercase tracking-widest text-gray-400 hover:text-[#C8102E] transition-colors bg-gray-50 px-4 py-2 rounded inline-block"
-                      >
-                        ← Back to {activeCategory}
-                      </button>
-                      
-                      <div className="flex gap-3 items-center mb-4">
-                        <span className="bg-[#C8102E] text-white text-[10px] font-black px-2 py-1 uppercase tracking-widest rounded-sm">{selectedArticle.category || 'News'}</span>
-                        {selectedArticle.readTime && <span className="text-gray-400 text-xs font-bold uppercase">{selectedArticle.readTime}</span>}
-                      </div>
-
-                      <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 leading-[1.1] mb-6 tracking-tight">{selectedArticle.title}</h1>
-                      
-                      <div className="flex flex-wrap items-center justify-between gap-3 text-gray-500 font-bold text-xs uppercase tracking-widest mb-8 pb-6 border-b border-gray-100">
-                        <span>Published: {selectedArticle.publishedDate ? new Date(selectedArticle.publishedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently'}</span>
-                        
-                        {isAdmin && (
-                          <button 
-                            onClick={handleCopyLink}
-                            className={`flex items-center gap-2 px-4 py-2 rounded transition-colors ${copied ? 'bg-green-600 text-white' : 'bg-gray-900 text-white hover:bg-[#C8102E]'}`}
-                          >
-                            {copied ? '✓ Link Copied' : '🔗 Copy Direct Link (Admin)'}
-                          </button>
-                        )}
-                      </div>
-
-                      {selectedArticle.image && (
-                        <div className="mb-10 overflow-hidden rounded">
-                          <img src={selectedArticle.image.url} alt={selectedArticle.title} className="w-full max-h-[500px] object-cover hover:scale-105 transition-transform duration-700" />
-                        </div>
-                      )}
-
-                      <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed text-lg font-serif break-words">
-                        {selectedArticle.content?.html ? (
-                          <div dangerouslySetInnerHTML={{ __html: selectedArticle.content.html }} />
-                        ) : (
-                          <p>{selectedArticle.content?.text || selectedArticle.summary}</p>
-                        )}
-                      </div>
+                <div className="animate-fade-in w-full">
+                  <div className="flex items-center gap-4 mb-8 border-b-2 border-gray-200 pb-4">
+                    <div className="w-12 h-12 rounded-full border-2 border-[#C8102E] overflow-hidden bg-white shadow-sm shrink-0">
+                      <img src="/image_4dfcc5.jpg" alt="Category Icon" className="w-full h-full object-cover" />
                     </div>
-                  </article>
-                ) : (
-                  /* --- NEWS GRID VIEW --- */
-                  <div className="animate-fade-in w-full">
-                    <div className="flex items-center gap-4 mb-8 border-b-2 border-gray-200 pb-4">
-                      <div className="w-12 h-12 rounded-full border-2 border-[#C8102E] overflow-hidden bg-white shadow-sm shrink-0">
-                        <img src="/1000447725.png" alt="Category Icon" className="w-full h-full object-cover" />
-                      </div>
-                      <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-gray-900">
-                        {searchQuery ? `Search: ${searchQuery}` : activeCategory}
-                      </h2>
-                    </div>
+                    <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-gray-900">
+                      {searchQuery ? `Search: ${searchQuery}` : activeCategory}
+                    </h2>
+                  </div>
 
-                    {activeCategory === 'Codes of the Day' && !searchQuery ? (
-                      /* --- DYNAMIC BETTING SLIPS UI --- */
-                      <div className="mb-8 bg-gradient-to-br from-gray-900 to-black text-white rounded-lg p-6 shadow-xl border border-gray-800 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#C8102E] opacity-20 blur-3xl rounded-full"></div>
-                        <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-3">
-                          <h3 className="font-black text-lg tracking-widest uppercase text-white flex items-center gap-2">
-                            <span className="text-[#C8102E]">🎯</span> GEOTREXX Live Odds
-                          </h3>
-                          <span className="bg-[#C8102E] text-white text-[10px] px-2 py-1 rounded font-black uppercase tracking-wider animate-pulse">Live Slips</span>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-                           {displayedArticles.length > 0 ? (
-                             displayedArticles.map(article => (
-                               <div key={article.id} className="bg-gray-800/80 p-4 rounded border border-gray-700 backdrop-blur-sm transition-all hover:border-gray-500 flex flex-col">
-                                  <p className="text-gray-400 text-xs font-bold uppercase mb-1">Market</p>
-                                  <p className="font-bold text-sm mb-2">{article.title}</p>
-                                  <div className="flex justify-between items-center mt-auto pt-3 border-t border-gray-700">
-                                    <span className="text-gray-400 text-xs">Odds: <span className="text-green-400 font-black text-base">{article.summary || 'N/A'}</span></span>
-                                    <button 
-                                      onClick={() => setActiveSlip(activeSlip === article.id ? null : article.id)}
-                                      className="bg-white text-black text-xs font-bold px-4 py-2 rounded hover:bg-gray-200 transition-colors shadow-sm"
-                                    >
-                                      {activeSlip === article.id ? 'Hide Code' : 'Reveal Slip'}
-                                    </button>
+                  {activeCategory === 'Codes of the Day' && !searchQuery ? (
+                    /* --- DYNAMIC BETTING SLIPS UI --- */
+                    <div className="mb-8 bg-gradient-to-br from-gray-900 to-black text-white rounded-lg p-6 shadow-xl border border-gray-800 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-[#C8102E] opacity-20 blur-3xl rounded-full"></div>
+                      <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-3">
+                        <h3 className="font-black text-lg tracking-widest uppercase text-white flex items-center gap-2">
+                          <span className="text-[#C8102E]">🎯</span> GEOTREXX Live Odds
+                        </h3>
+                        <span className="bg-[#C8102E] text-white text-[10px] px-2 py-1 rounded font-black uppercase tracking-wider animate-pulse">Live Slips</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                          {displayedArticles.length > 0 ? (
+                            displayedArticles.map(article => (
+                              <div key={article.id} className="bg-gray-800/80 p-4 rounded border border-gray-700 backdrop-blur-sm transition-all hover:border-gray-500 flex flex-col">
+                                <p className="text-gray-400 text-xs font-bold uppercase mb-1">Market</p>
+                                <p className="font-bold text-sm mb-2">{article.title}</p>
+                                <div className="flex justify-between items-center mt-auto pt-3 border-t border-gray-700">
+                                  <span className="text-gray-400 text-xs">Odds: <span className="text-green-400 font-black text-base">{article.summary || 'N/A'}</span></span>
+                                  <button 
+                                    onClick={() => setActiveSlip(activeSlip === article.id ? null : article.id)}
+                                    className="bg-white text-black text-xs font-bold px-4 py-2 rounded hover:bg-gray-200 transition-colors shadow-sm"
+                                  >
+                                    {activeSlip === article.id ? 'Hide Code' : 'Reveal Slip'}
+                                  </button>
+                                </div>
+                                {activeSlip === article.id && (
+                                  <div className="mt-4 bg-black p-3 text-sm text-gray-200 rounded border border-gray-600 animate-fade-in text-center font-mono shadow-inner">
+                                      Booking Code: <span className="text-[#C8102E] font-black text-xl tracking-widest ml-2">{article.content?.text || 'N/A'}</span>
+                                      <button 
+                                        onClick={() => handleCopyCode(article.content?.text, article.id)}
+                                        className="ml-3 bg-gray-800 hover:bg-[#C8102E] text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider transition-colors inline-flex items-center align-middle"
+                                      >
+                                        {copiedCode === article.id ? 'Copied! ✓' : 'Copy'}
+                                      </button>
+                                      <div className="text-[10px] text-gray-500 mt-2 uppercase tracking-wider border-t border-gray-800 pt-2">
+                                        Valid on {article.readTime || 'Select Platforms'}
+                                      </div>
                                   </div>
-                                  {activeSlip === article.id && (
-                                    <div className="mt-4 bg-black p-3 text-sm text-gray-200 rounded border border-gray-600 animate-fade-in text-center font-mono shadow-inner">
-                                       Booking Code: <span className="text-[#C8102E] font-black text-xl tracking-widest ml-2">{article.content?.text || 'N/A'}</span>
-                                       <button 
-                                         onClick={() => handleCopyCode(article.content?.text, article.id)}
-                                         className="ml-3 bg-gray-800 hover:bg-[#C8102E] text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider transition-colors inline-flex items-center align-middle"
-                                       >
-                                         {copiedCode === article.id ? 'Copied! ✓' : 'Copy'}
-                                       </button>
-                                       <div className="text-[10px] text-gray-500 mt-2 uppercase tracking-wider border-t border-gray-800 pt-2">
-                                         Valid on {article.readTime || 'Select Platforms'}
-                                       </div>
-                                    </div>
-                                  )}
-                               </div>
-                             ))
-                           ) : (
-                             <div className="col-span-full py-10 text-center">
-                               <p className="text-gray-400 text-sm font-bold uppercase tracking-widest">No active betting codes right now.</p>
-                               <p className="text-gray-600 text-xs mt-2">Check back later for new live odds.</p>
-                             </div>
-                           )}
-                        </div>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="col-span-full py-10 text-center">
+                              <p className="text-gray-400 text-sm font-bold uppercase tracking-widest">No active betting codes right now.</p>
+                              <p className="text-gray-600 text-xs mt-2">Check back later for new live odds.</p>
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* --- REGULAR NEWS GRID --- */
+                    displayedArticles.length === 0 ? (
+                      <div className="bg-white p-10 text-center rounded border border-gray-200">
+                        <p className="text-gray-500 text-lg font-bold">No articles currently published here.</p>
                       </div>
                     ) : (
-                      /* --- REGULAR NEWS GRID --- */
-                      displayedArticles.length === 0 ? (
-                        <div className="bg-white p-10 text-center rounded border border-gray-200">
-                          <p className="text-gray-500 text-lg font-bold">No articles currently published here.</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {displayedArticles.map(article => (
-                            <Link 
-                              key={article.id} 
-                              href={`/?post=${article.slug || article.id}`}
-                              onClick={(e) => { e.preventDefault(); handleArticleClick(article); }} 
-                              className="group flex flex-col bg-white shadow-sm hover:shadow-lg transition-all duration-300 rounded overflow-hidden border border-gray-100"
-                            >
-                              <div className="w-full h-52 bg-gray-100 overflow-hidden relative">
-                                {article.image ? (
-                                  <img src={article.image.url} alt={article.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold">No Image</div>
-                                )}
-                                <div className="absolute top-3 left-3 bg-[#C8102E] text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 shadow-md">
-                                  {article.category}
-                                </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {displayedArticles.map(article => (
+                          <Link 
+                            key={article.id} 
+                            href={`/post/${article.slug || article.id}`}
+                            className="group flex flex-col bg-white shadow-sm hover:shadow-lg transition-all duration-300 rounded overflow-hidden border border-gray-100"
+                          >
+                            <div className="w-full h-52 bg-gray-100 overflow-hidden relative">
+                              {article.image ? (
+                                <img src={article.image.url} alt={article.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold">No Image</div>
+                              )}
+                              <div className="absolute top-3 left-3 bg-[#C8102E] text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 shadow-md">
+                                {article.category}
                               </div>
-                              <div className="p-5 flex flex-col grow">
-                                <h3 className="text-xl font-black text-gray-900 leading-tight mb-3 group-hover:text-[#C8102E] transition-colors line-clamp-3">{article.title}</h3>
-                                <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-4 font-serif">{article.summary}</p>
-                                <div className="mt-auto flex justify-between items-center text-xs font-bold text-gray-400 uppercase tracking-widest border-t border-gray-50 pt-3">
-                                  <span>{article.publishedDate ? new Date(article.publishedDate).toLocaleDateString() : 'New'}</span>
-                                  <span className="text-[#C8102E] group-hover:underline">Read →</span>
-                                </div>
+                            </div>
+                            <div className="p-5 flex flex-col grow">
+                              <h3 className="text-xl font-black text-gray-900 leading-tight mb-3 group-hover:text-[#C8102E] transition-colors line-clamp-3">{article.title}</h3>
+                              <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-4 font-serif">{article.summary}</p>
+                              <div className="mt-auto flex justify-between items-center text-xs font-bold text-gray-400 uppercase tracking-widest border-t border-gray-50 pt-3">
+                                <span>{article.publishedDate ? new Date(article.publishedDate).toLocaleDateString() : 'New'}</span>
+                                <span className="text-[#C8102E] group-hover:underline">Read →</span>
                               </div>
-                            </Link>
-                          ))}
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )
+                  )}
+                </div>
               </div>
 
               {/* RIGHT COLUMN: TRENDING SIDEBAR */}
@@ -447,9 +366,9 @@ function DashboardContent() {
                   </h3>
                   <div className="flex flex-col gap-4">
                     {articles.slice(0, 4).map((trend) => (
-                      <div 
+                      <Link 
                         key={trend.id} 
-                        onClick={() => handleArticleClick(trend)}
+                        href={`/post/${trend.slug || trend.id}`}
                         className="flex gap-3 group cursor-pointer border-b border-gray-100 pb-4 last:border-0 last:pb-0"
                       >
                         <div className="w-20 h-20 shrink-0 bg-gray-100 rounded overflow-hidden">
@@ -459,7 +378,7 @@ function DashboardContent() {
                           <span className="text-[10px] text-[#C8102E] font-black uppercase tracking-widest mb-1">{trend.category}</span>
                           <h4 className="text-sm font-bold text-gray-900 leading-snug group-hover:text-[#C8102E] transition-colors line-clamp-3">{trend.title}</h4>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                   
