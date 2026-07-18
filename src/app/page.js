@@ -206,8 +206,8 @@ function DashboardContent() {
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden absolute top-4 right-6 text-2xl text-gray-500 hover:text-gray-900">✕</button>
           
           <div className="w-24 h-24 mx-auto rounded-full border-4 border-[#C8102E] overflow-hidden bg-white mb-4 shadow-lg cursor-pointer hover:scale-105 transition-transform" onClick={handleHomeClick}>
-            <img src="/1000447725.png" alt="GEOTREXX Logo" className="w-full h-full object-cover" />
-          </div>
+          
+       <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" style={{ width: '100px', height: 'auto' }} />
           <h1 className="font-black text-2xl tracking-widest text-gray-900 cursor-pointer" onClick={handleHomeClick}>GEO<span className="text-[#C8102E]">TREXX</span></h1>
           <p className="text-xs font-bold text-gray-500 uppercase mt-2 tracking-widest mb-6">Info Nexus</p>
           
