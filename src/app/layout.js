@@ -6,11 +6,11 @@ export const metadata = {
   openGraph: {
     title: "GEOTREXX | Info Nexus",
     description: "Your premium digital destination for global news, sports analytics, and deep editorial coverage.",
-    url: "https://your-domain.com", // Update this when you host the site
+    url: "https://www.geotrexx.com", 
     siteName: "GEOTREXX",
     images: [
       {
-        url: "/1000447725.png", // Uses the logo you already have in the public folder
+        url: "/geotrexx-logo.png", 
         width: 1200,
         height: 630,
         alt: "GEOTREXX Media Group",
@@ -23,7 +23,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "GEOTREXX | Info Nexus",
     description: "Global news, sports analytics, and deep editorial coverage.",
-    images: ["/1000447725.png"],
+    images: ["/geotrexx-logo.png"],
   },
 };
 
