@@ -5,13 +5,13 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function DashboardClient() {
+export default function DashboardClient({ serverArticles, serverPostId, serverError }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [articles, setArticles] = useState(serverArticles && serverArticles.length > 0 ? serverArticles : []);
+  const [loading, setLoading] = useState(false); // Loading is now false so bots see content instantly
+  const [error, setError] = useState(serverError);
   const [activeCategory, setActiveCategory] = useState('All News');
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -20,9 +20,6 @@ export default function DashboardClient() {
   const [activeSlip, setActiveSlip] = useState(null);
   const [copiedCode, setCopiedCode] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-
-  // FIXED: Restored the '1's to match your exact Hygraph endpoint
-  const CMS_URL = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master";
 
   const fallbackArticles = [
     {
@@ -35,34 +32,11 @@ export default function DashboardClient() {
       summary: "The highly anticipated internal elections have been halted following sudden disruptions at the polling venue.",
       content: { html: "The highly anticipated internal elections have been halted following sudden disruptions at the polling venue." },
       image: { url: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?q=80&w=800&auto=format&fit=crop" }
-    },
-    {
-      id: '2',
-      title: "La Liga Postpones FC Barcelona's Opening Fixtures",
-      slug: "la-liga-barcelona-postponed",
-      category: "Sports",
-      publishedDate: "2026-07-15",
-      readTime: "4 min read",
-      summary: "Due to multiple star players participating in the deep stages of the World Cup, La Liga has granted Barcelona a delayed start.",
-      content: { html: "Due to multiple star players participating in the deep stages of the 2026 World Cup, La Liga has granted Barcelona a delayed start." },
-      image: { url: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=800&auto=format&fit=crop" }
-    },
-    {
-      id: '3',
-      title: "Weekend VIP Acca",
-      slug: "weekend-vip-acca",
-      category: "Codes of the Day",
-      publishedDate: "2026-07-18",
-      readTime: "SportyBet",
-      summary: "12.50",
-      content: { text: "BC98765", html: "BC98765" },
-      image: null
     }
   ];
 
   // Sync state with dynamic parameters
   useEffect(() => {
-    const postId = searchParams.get('post');
     const adminStatus = searchParams.get('admin');
 
     if (adminStatus === '1') {
@@ -75,56 +49,20 @@ export default function DashboardClient() {
       setIsAdmin(true);
     }
 
-    if (articles.length > 0 && postId) {
-      const matchedArticle = articles.find(a => a.slug === postId || a.id === postId);
+    if (articles.length === 0 && !serverError) {
+       setArticles(fallbackArticles);
+    }
+
+    if (articles.length > 0 && serverPostId) {
+      const matchedArticle = articles.find(a => a.slug === serverPostId || a.id === serverPostId);
       if (matchedArticle) {
         setSelectedArticle(matchedArticle);
         if (matchedArticle.category) setActiveCategory(matchedArticle.category);
       }
+    } else {
+      setSelectedArticle(null);
     }
-  }, [searchParams, articles]);
-
-  // Fetch articles from Hygraph CMS
-  useEffect(() => {
-    const fetchArticles = async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); 
-
-      try {
-        const query = `query GetArticles { articles(orderBy: publishedDate_DESC) { id title slug category publishedDate readTime summary content { html text } image { url } } }`;
-
-        const response = await fetch(CMS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query }),
-          cache: 'no-store',
-          signal: controller.signal 
-        });
-
-        clearTimeout(timeoutId); 
-
-        const result = await response.json();
-
-        if (result.errors) {
-          throw new Error(result.errors[0].message);
-        }
-
-        if (result.data && result.data.articles && result.data.articles.length > 0) {
-          setArticles(result.data.articles);
-        } else {
-          setArticles(fallbackArticles);
-        }
-      } catch (err) {
-        console.error("Connection Error:", err);
-        setError("Database link down. Loading offline fallback news.");
-        setArticles(fallbackArticles);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchArticles();
-  }, []);
+  }, [serverPostId, articles, searchParams, serverError]);
 
   const navigation = ['All News', 'Politics', 'Sports', 'Entertainment', 'STEM', 'General News'];
 
@@ -177,7 +115,6 @@ export default function DashboardClient() {
         setCopiedCode(id);
         setTimeout(() => setCopiedCode(null), 2000);
       }).catch(err => {
-        console.error('Failed to copy code', err);
         const textArea = document.createElement("textarea");
         textArea.value = code;
         document.body.appendChild(textArea);
@@ -200,7 +137,7 @@ export default function DashboardClient() {
       <header className="md:hidden flex items-center justify-between p-4 bg-white border-b-4 border-[#C8102E] sticky top-0 z-50 shadow-md">
         <div className="flex items-center gap-3 cursor-pointer" onClick={handleHomeClick}>
           <div className="w-10 h-10 rounded-full border-2 border-[#C8102E] overflow-hidden bg-white">
-            <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="w-full h-full object-cover" />
+            <img src="/icon.png" alt="GEOTREXX Logo" className="w-full h-full object-cover" />
           </div>
           <span className="font-black text-xl tracking-widest uppercase">GEO<span className="text-[#C8102E]">TREXX</span></span>
         </div>
@@ -215,12 +152,11 @@ export default function DashboardClient() {
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden absolute top-4 right-6 text-2xl text-gray-500 hover:text-gray-900">✕</button>
           
           <div className="w-24 h-24 mx-auto rounded-full border-4 border-[#C8102E] overflow-hidden bg-white mb-4 shadow-lg cursor-pointer hover:scale-105 transition-transform" onClick={handleHomeClick}>
-            <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="w-full h-full object-cover" />
+            <img src="/icon.png" alt="GEOTREXX Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="font-black text-2xl tracking-widest text-gray-900 cursor-pointer" onClick={handleHomeClick}>GEO<span className="text-[#C8102E]">TREXX</span></h1>
           <p className="text-xs font-bold text-gray-500 uppercase mt-2 tracking-widest mb-6">Info Nexus</p>
           
-          {/* SEARCH BAR */}
           <div className="w-full relative">
             <input 
               type="text" 
@@ -264,7 +200,6 @@ export default function DashboardClient() {
       {/* MAIN CONTENT AREA */}
       <main className="grow w-full flex flex-col min-h-screen relative overflow-hidden">
         
-        {/* TICKER */}
         <div className="bg-[#111111] text-white flex items-center border-b-4 border-[#C8102E] overflow-hidden relative md:sticky md:top-0 z-40 w-full shadow-sm">
           <div className="bg-[#C8102E] font-black uppercase tracking-widest text-xs px-4 py-3 shrink-0 flex items-center gap-2 z-10 shadow-[5px_0_15px_-5px_rgba(0,0,0,0.5)]">
             <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
@@ -296,10 +231,8 @@ export default function DashboardClient() {
           ) : (
             <div className="flex flex-col lg:flex-row gap-8 w-full">
               
-              {/* LEFT COLUMN: MAIN NEWS GRID OR ARTICLE */}
               <div className="w-full lg:w-8/12 xl:w-9/12">
                 {selectedArticle ? (
-                  /* --- FULL ARTICLE READING VIEW --- */
                   <article className="bg-white rounded shadow-sm overflow-hidden border-t-4 border-[#C8102E] animate-fade-in w-full">
                     <div className="p-6 md:p-10">
                       <button 
@@ -345,11 +278,10 @@ export default function DashboardClient() {
                     </div>
                   </article>
                 ) : (
-                  /* --- NEWS GRID VIEW --- */
                   <div className="animate-fade-in w-full">
                     <div className="flex items-center gap-4 mb-8 border-b-2 border-gray-200 pb-4">
                       <div className="w-12 h-12 rounded-full border-2 border-[#C8102E] overflow-hidden bg-white shadow-sm shrink-0">
-                        <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="w-full h-full object-cover" />
+                        <img src="/icon.png" alt="GEOTREXX Logo" className="w-full h-full object-cover" />
                       </div>
                       <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-gray-900">
                         {searchQuery ? `Search: ${searchQuery}` : activeCategory}
@@ -357,7 +289,6 @@ export default function DashboardClient() {
                     </div>
 
                     {activeCategory === 'Codes of the Day' && !searchQuery ? (
-                      /* --- DYNAMIC BETTING SLIPS UI --- */
                       <div className="mb-8 bg-gradient-to-br from-gray-900 to-black text-white rounded-lg p-6 shadow-xl border border-gray-800 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-[#C8102E] opacity-20 blur-3xl rounded-full"></div>
                         <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-3">
@@ -407,7 +338,6 @@ export default function DashboardClient() {
                         </div>
                       </div>
                     ) : (
-                      /* --- REGULAR NEWS GRID --- */
                       displayedArticles.length === 0 ? (
                         <div className="bg-white p-10 text-center rounded border border-gray-200">
                           <p className="text-gray-500 text-lg font-bold">No articles currently published here.</p>
@@ -447,7 +377,6 @@ export default function DashboardClient() {
                 )}
               </div>
 
-              {/* RIGHT COLUMN: TRENDING SIDEBAR */}
               <div className="w-full lg:w-4/12 xl:w-3/12">
                 <div className="bg-white border-t-4 border-black p-5 shadow-sm rounded sticky top-24">
                   <h3 className="font-black text-xl text-gray-900 uppercase tracking-tight mb-5 flex items-center gap-2">
@@ -471,7 +400,6 @@ export default function DashboardClient() {
                     ))}
                   </div>
                   
-                  {/* Ad Space Placeholder */}
                   <div className="mt-6 bg-gray-100 w-full h-[250px] border border-gray-200 flex flex-col items-center justify-center text-gray-400 rounded">
                     <span className="text-xs font-bold uppercase tracking-widest mb-1">Advertisement</span>
                     <span className="text-sm">300 x 250</span>
@@ -483,7 +411,6 @@ export default function DashboardClient() {
           )}
         </div>
 
-        {/* FOOTER */}
         <footer className="bg-[#111111] text-white border-t-8 border-[#C8102E] w-full mt-auto shrink-0">
           <div className="max-w-7xl mx-auto p-10 md:p-14 grid grid-cols-1 md:grid-cols-3 gap-10">
             <div>

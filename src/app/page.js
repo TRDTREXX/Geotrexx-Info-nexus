@@ -1,25 +1,35 @@
-import { Suspense } from 'react';
 import DashboardClient from './DashboardClient'; 
 
-// FIXED: Restored the '1's to match your exact Hygraph endpoint
 const CMS_URL = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master";
+const SITE_URL = 'https://www.geotrexx.com'; 
 
-// This runs on the server to generate Facebook/Twitter tags BEFORE the page loads
 export async function generateMetadata({ searchParams }) {
-  const postId = searchParams.post;
+  const resolvedParams = await searchParams;
+  const postId = resolvedParams?.post;
 
-  // If there is no post ID in the URL, return the default GEOTREXX metadata
+  export async function generateMetadata({ searchParams }) {
+  const resolvedParams = await searchParams;
+  const postId = resolvedParams?.post;
+  const absoluteSiteUrl = 'https://www.geotrexx.com';
+
+  // 1. Fallback for the Homepage
   if (!postId) {
     return {
+      metadataBase: new URL(absoluteSiteUrl),
       title: 'GEOTREXX | Info Nexus',
       description: 'Your premium digital destination for global news, sports analytics, and deep editorial coverage.',
       openGraph: {
-        images: ['/geotrexx-logo.png'],
+        title: 'GEOTREXX | Info Nexus',
+        description: 'Your premium digital destination for global news, sports analytics, and deep editorial coverage.',
+        url: absoluteSiteUrl,
+        siteName: 'GEOTREXX',
+        images: [{ url: `${absoluteSiteUrl}/icon.png`, width: 1200, height: 630 }],
+        type: 'website',
       },
     };
   }
 
-  // If there IS a post ID, fetch that specific article from Hygraph
+  // 2. Dynamic Fetch for Specific Articles
   try {
     const query = `
       query GetArticleMeta($slug: String!) {
@@ -31,14 +41,11 @@ export async function generateMetadata({ searchParams }) {
       }
     `;
 
-    const response = await fetch(CMS_URL, {
+    const response = await fetch("https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master", {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query,
-        variables: { slug: postId }
-      }),
-      cache: 'no-store' // Added to fix the issue where new Hygraph content wasn't showing
+      body: JSON.stringify({ query, variables: { slug: postId } }),
+      next: { revalidate: 60 } 
     });
 
     const result = await response.json();
@@ -46,12 +53,26 @@ export async function generateMetadata({ searchParams }) {
 
     if (article) {
       return {
+        metadataBase: new URL(absoluteSiteUrl),
         title: `${article.title} | GEOTREXX`,
         description: article.summary,
+        alternates: {
+          canonical: `${absoluteSiteUrl}/?post=${postId}`,
+        },
         openGraph: {
           title: article.title,
           description: article.summary,
-          images: article.image ? [article.image.url] : ['/geotrexx-logo.png'],
+          url: `${absoluteSiteUrl}/?post=${postId}`, 
+          siteName: 'GEOTREXX',
+          images: [
+            {
+              url: article.image ? article.image.url : `${absoluteSiteUrl}/icon.png`,
+              width: 1200,
+              height: 630,
+              alt: article.title,
+            }
+          ],
+          type: 'article',
         },
       };
     }
@@ -59,18 +80,14 @@ export async function generateMetadata({ searchParams }) {
     console.error("Error fetching metadata:", error);
   }
 
-  return { title: 'GEOTREXX | Info Nexus' };
-}
-
-// The actual page just loads your client component
-export default function Home() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 w-full">
-        <div className="w-12 h-12 border-4 border-[#C8102E] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    }>
-      <DashboardClient />
-    </Suspense>
-  );
+  // 3. Ultimate Fallback if the database fails
+  return { 
+    metadataBase: new URL(absoluteSiteUrl),
+    title: 'GEOTREXX | Info Nexus',
+    openGraph: { 
+      title: 'GEOTREXX | Info Nexus',
+      url: absoluteSiteUrl,
+      images: [{ url: `${absoluteSiteUrl}/icon.png`, width: 1200, height: 630 }] 
+    }
+  };
 }
