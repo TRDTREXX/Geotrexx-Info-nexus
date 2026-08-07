@@ -1,24 +1,20 @@
 import NewsCard from '../../../components/NewsCard'
+import Link from 'next/link'
 
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
-// Utility to capitalize the category name (e.g., "sports" -> "Sports")
-const formatCategory = (slug: string) => slug.charAt(0).toUpperCase() + slug.slice(1)
-
-// Fetch posts filtered by category
-async function getCategoryPosts(category: string) {
+const getCategoryArticles = async (categorySlug: string) => {
+  // We fetch all articles and filter on the frontend to guarantee we catch the category regardless of capitalization in Hygraph
   const query = `
-    query GetCategoryPosts($category: String!) {
-      posts(where: { category: $category }, orderBy: createdAt_DESC) {
+    query GetAllArticles {
+      articles(orderBy: publishedDate_DESC, first: 100) {
         id
         title
         slug
-        excerpt
-        createdAt
+        summary
+        publishedDate
         category
-        coverImage {
-          url
-        }
+        image { url }
       }
     }
   `
@@ -26,59 +22,79 @@ async function getCategoryPosts(category: string) {
     const res = await fetch(HYGRAPH_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { category } }),
-      next: { revalidate: 60 } // Enterprise edge caching
+      body: JSON.stringify({ query }),
+      next: { revalidate: 0 } // Force fresh for debugging
     })
     const json = await res.json()
-    return json.data?.posts || []
-  } catch (error) {
-    console.error("Failed to fetch category posts:", error)
-    return []
+    
+    if (json.errors) return { data: [], error: json.errors[0].message }
+
+    const allArticles = json.data?.articles || []
+
+    // Robust category matching
+    const filtered = allArticles.filter((article: any) => {
+      if (!article.category) return false;
+      // Normalizes strings so "General News" matches "general-news"
+      const catA = article.category.toLowerCase().replace(/[^a-z0-9]/g, '')
+      const catB = categorySlug.toLowerCase().replace(/[^a-z0-9]/g, '')
+      return catA === catB
+    })
+
+    return { data: filtered, error: null }
+  } catch (error: any) {
+    return { data: [], error: error.message }
   }
 }
 
 export default async function CategoryPage({ params }: { params: { slug: string } }) {
-  const categoryName = formatCategory(params.slug)
-  const posts = await getCategoryPosts(categoryName)
+  const { data: articles, error } = await getCategoryArticles(params.slug)
+  
+  const formatTitle = (slug: string) => {
+    return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+  
+  const pageTitle = formatTitle(params.slug)
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-10">
+    <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 min-h-[60vh]">
       
-      {/* Premium Category Hero Banner */}
-      <div className="bg-[#1a1b23] text-white rounded-2xl p-10 mb-12 shadow-2xl border-l-8 border-[#C8102E] relative overflow-hidden">
-        <div className="relative z-10">
-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-widest mb-4">{categoryName}</h1>
-          <p className="text-gray-400 text-lg max-w-2xl">The latest breaking news, deep analytics, and exclusive reports on {categoryName}.</p>
-        </div>
-        {/* Subtle background element for luxury feel */}
-        <div className="absolute -right-20 -top-20 opacity-5 text-[15rem] font-black uppercase pointer-events-none">
-          {categoryName}
+      <div className="flex items-center gap-4 mb-10 border-b border-gray-200 dark:border-gray-800 pb-6">
+        <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white uppercase tracking-widest">
+          {pageTitle}
+        </h1>
+        <div className="h-1 flex-grow bg-gray-100 dark:bg-gray-800 ml-4 rounded-full">
+          <div className="h-full w-24 bg-[#C8102E] rounded-full"></div>
         </div>
       </div>
 
-      {/* Grid Layout based on 8px system */}
-      {posts && posts.length > 0 ? (
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl border border-red-200 dark:border-red-800 mb-8">
+          <p className="text-red-600 dark:text-red-400 font-mono text-sm">Error: {error}</p>
+        </div>
+      )}
+
+      {(!articles || articles.length === 0) && !error ? (
+        <div className="py-20 text-center bg-white dark:bg-[#1a1b23] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+          <svg className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5L18.5 7H20" /></svg>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">No Stories Found</h2>
+          <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">We couldn't find any published articles in the <span className="font-bold text-[#C8102E]">{pageTitle}</span> category yet.</p>
+          <Link href="/" className="inline-block mt-6 px-6 py-3 bg-[#C8102E] text-white font-bold uppercase tracking-widest rounded-lg hover:bg-red-800 transition-colors">Return Home</Link>
+        </div>
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {posts.map((post: any) => (
+          {articles.map((article: any) => (
             <NewsCard 
-              key={post.id}
-              title={post.title}
-              slug={post.slug}
-              excerpt={post.excerpt || "Click to read the full story and dive deep into the analysis."}
-              imageUrl={post.coverImage?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80"}
-              category={post.category || categoryName}
-              date={post.createdAt}
+              key={article.id}
+              title={article.title}
+              slug={article.slug}
+              excerpt={article.summary || "Click to read the full story and dive deep into the analysis."}
+              imageUrl={article.image?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80"}
+              category={article.category}
+              date={article.publishedDate}
             />
           ))}
         </div>
-      ) : (
-        /* Empty State */
-        <div className="w-full py-20 flex flex-col items-center justify-center text-center bg-gray-50 dark:bg-[#1a1b23] rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">No Stories in {categoryName}</h2>
-          <p className="text-gray-500">Our editorial team is currently updating this section. Check back shortly.</p>
-        </div>
       )}
-      
     </div>
   )
 }
