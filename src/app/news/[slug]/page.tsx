@@ -36,7 +36,6 @@ async function getArticle(slug: string) {
   }
 }
 
-// Fixed for Next.js 15 parameter Promises
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const params = await props.params;
   const { article } = await getArticle(params.slug)
@@ -56,7 +55,6 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   }
 }
 
-// Fixed for Next.js 15 parameter Promises
 export default async function ArticlePage(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
   const { article, error } = await getArticle(params.slug)
@@ -66,19 +64,6 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
       <div className="w-full py-32 flex flex-col items-center justify-center text-center px-4 min-h-[60vh]">
         <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-2xl p-8 max-w-2xl">
           <h2 className="text-2xl font-black text-red-600 dark:text-red-400 mb-4 uppercase tracking-widest">Article Render Error</h2>
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
-            We couldn't load the article at <strong>/news/{params.slug}</strong>. 
-          </p>
-          {error && (
-            <p className="font-mono text-sm bg-white dark:bg-black p-4 rounded border border-gray-200 dark:border-gray-800 break-words shadow-inner text-left">
-              {error}
-            </p>
-          )}
-          {!error && (
-             <p className="font-mono text-sm bg-white dark:bg-black p-4 rounded border border-gray-200 dark:border-gray-800 text-left">
-               The GraphQL query returned null. Check that this slug exists in Hygraph.
-             </p>
-          )}
           <Link href="/" className="mt-8 inline-block text-[#C8102E] font-bold uppercase hover:underline">Return Home</Link>
         </div>
       </div>
@@ -88,6 +73,11 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
   const wordCount = article.content?.html ? article.content.html.split(/\s+/).length : 0
   const readingTime = Math.max(1, Math.ceil(wordCount / 200))
   const displayCategory = (!article.category || article.category.toLowerCase() === 'general news') ? 'World' : article.category;
+
+  // Format Date to match Exhibit (e.g., Aug. 7, 2026 9:30 am GMT)
+  const dateObj = new Date(article.publishedDate)
+  const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const formattedTime = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase()
 
   return (
     <article className="w-full relative bg-[#f9fafb] dark:bg-[#0a0b10] min-h-screen">
@@ -110,16 +100,17 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
           {article.summary}
         </p>
 
-        <div className="flex items-center justify-between border-t border-b border-gray-200 dark:border-gray-800 py-4">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-[#C8102E] flex items-center justify-center text-white font-bold text-lg shadow-md">GE</div>
-            <div>
-              <p className="font-bold text-gray-900 dark:text-white">GEOTREXX Desk</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Published {new Date(article.publishedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </p>
-            </div>
+        {/* 🚀 Exhibit-Matched Publisher Block */}
+        <div className="flex flex-col gap-1 border-t border-b border-gray-200 dark:border-gray-800 py-6">
+          <div className="flex items-center gap-3">
+            <Image src="/orpheus.jpg" alt="Orpheus Grant-Essilfie" width={48} height={48} className="w-12 h-12 rounded-full object-cover shadow-sm" />
+            <p className="text-lg text-gray-900 dark:text-white">
+              By <span className="font-bold">Orpheus Grant-Essilfie</span>
+            </p>
           </div>
+          <p className="text-gray-700 dark:text-gray-400 text-sm pl-[60px] font-medium">
+            {formattedDate} {formattedTime} GMT
+          </p>
         </div>
       </header>
 

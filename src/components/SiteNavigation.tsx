@@ -11,7 +11,6 @@ export default function SiteNavigation() {
     else document.body.style.overflow = 'auto'
   }, [isSidebarOpen])
 
-  // Confirmed correct active tabs
   const tabs = ['Politics', 'Business', 'Sports', 'Technology', 'Entertainment', 'World', 'Opinion']
 
   return (
@@ -29,9 +28,14 @@ export default function SiteNavigation() {
         .ticker-container:hover .animate-ticker {
           animation-play-state: paused;
         }
+        /* Hardcoded Stripe Pattern for Light Mode */
+        .light-stripe-bg {
+          background-color: #C8102E;
+          background-image: repeating-linear-gradient(45deg, #C8102E, #C8102E 10px, #000000 10px, #000000 20px);
+        }
       `}</style>
 
-      {/* Sidebar */}
+      {/* Sidebar (Creator link REMOVED) */}
       {isSidebarOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]" onClick={() => setSidebarOpen(false)} />}
       <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-[#0a0b10] z-[90] transform transition-transform duration-300 border-r border-gray-200 dark:border-gray-800 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
@@ -49,15 +53,9 @@ export default function SiteNavigation() {
               {tab}
             </Link>
           ))}
-          <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
-            <Link href="/creator" onClick={() => setSidebarOpen(false)} className="text-xl font-bold text-gray-900 dark:text-white hover:text-[#C8102E] transition-colors">
-              Our Creators
-            </Link>
-          </div>
         </div>
       </div>
 
-      {/* Scrolling Breaking News Ticker */}
       <div className="w-full bg-black text-white py-1.5 px-4 text-xs font-bold tracking-widest flex items-center overflow-hidden ticker-container relative z-50 border-b border-gray-900">
         <div className="flex items-center gap-2 mr-4 flex-shrink-0 z-10 bg-black pr-2">
           <span className="flex h-2 w-2 relative">
@@ -77,7 +75,6 @@ export default function SiteNavigation() {
         </div>
       </div>
 
-      {/* Main Centered Header - LIGHT: Crimson+White | DARK: Black+Crimson Stripe */}
       <header className="sticky top-0 z-50 w-full bg-[#C8102E] dark:bg-[#0a0b10] border-b border-[#a30d25] dark:border-b-4 dark:border-[#C8102E] shadow-lg transition-colors duration-300">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex-1">
@@ -88,7 +85,6 @@ export default function SiteNavigation() {
           </div>
           <div className="flex-1 flex justify-center">
             <Link href="/" className="block group">
-              {/* Logo wrapped in white for contrast preservation */}
               <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="h-12 w-12 md:h-14 md:w-14 object-cover rounded-full shadow-md bg-white p-1 group-hover:opacity-90 transition-opacity border-2 border-white/20 dark:border-none" />
             </Link>
           </div>
@@ -100,13 +96,13 @@ export default function SiteNavigation() {
           </div>
         </div>
 
-        {/* TABS - White block in light mode to balance Crimson, Dark block in dark mode */}
-        <div className="w-full bg-white dark:bg-[#0a0b10] border-b border-gray-200 dark:border-gray-900 hidden md:block overflow-x-auto shadow-sm transition-colors duration-300">
+        {/* TABS - Forced light-stripe-bg class in light mode */}
+        <div className="w-full light-stripe-bg dark:bg-[#0a0b10] dark:bg-none border-b-4 border-black dark:border-gray-900 hidden md:block overflow-x-auto shadow-sm transition-colors duration-300">
           <div className="max-w-[1400px] mx-auto px-4 flex justify-center gap-10 py-3">
             {tabs.map((tab) => (
-              <Link key={tab} href={`/category/${tab.toLowerCase()}`} className="text-xs font-black uppercase tracking-widest text-[#C8102E] hover:text-red-900 dark:text-gray-400 dark:hover:text-[#C8102E] transition-colors relative group py-1">
+              <Link key={tab} href={`/category/${tab.toLowerCase()}`} className="text-xs font-black uppercase tracking-widest text-white dark:text-gray-400 dark:hover:text-[#C8102E] transition-colors relative group py-1 drop-shadow-md">
                 {tab}
-                <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-[#C8102E] transition-all group-hover:w-full"></span>
+                <span className="absolute -bottom-1 left-0 w-0 h-[3px] bg-white dark:bg-[#C8102E] transition-all group-hover:w-full"></span>
               </Link>
             ))}
           </div>
