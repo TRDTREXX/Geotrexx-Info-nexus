@@ -7,14 +7,6 @@ export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: 'GEOTREXX | Info Nexus',
   description: 'Your premium digital destination for global news, sports analytics, and deep editorial coverage.',
-  openGraph: {
-    title: 'GEOTREXX | Info Nexus',
-    description: 'Your premium digital destination for global news, sports analytics, and deep editorial coverage.',
-    url: SITE_URL,
-    siteName: 'GEOTREXX',
-    images: [{ url: `${SITE_URL}/icon.png`, width: 1200, height: 630 }],
-    type: 'website',
-  },
 };
 
 export default async function Home() {
@@ -22,20 +14,36 @@ export default async function Home() {
   let serverError = null;
 
   try {
-    const query = `query GetArticles { articles(orderBy: publishedDate_DESC) { id title slug category publishedDate readTime summary content { html text } image { url } } }`;
+    // OVERHAUL: Stripped out category, readTime, publishedDate, and orderBy.
+    const query = `
+      query GetSafeArticles { 
+        articles { 
+          id 
+          title 
+          slug 
+          summary 
+          image { url } 
+        } 
+      }
+    `;
+    
     const response = await fetch(CMS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
-      next: { revalidate: 60 }
+      cache: 'no-store' 
     });
+    
     const result = await response.json();
-    if (result.data?.articles) {
+    
+    if (result.errors) {
+      // OVERHAUL: This forces the exact Hygraph error to display on your screen
+      serverError = "DATABASE REJECTED QUERY: " + result.errors[0].message;
+    } else if (result.data?.articles) {
       fetchedArticles = result.data.articles;
     }
   } catch (err) {
-    console.error(err);
-    serverError = "Database link down. Loading offline fallback news.";
+    serverError = "NETWORK CRASH: " + err.message;
   }
 
   return (
