@@ -1,22 +1,24 @@
-/** @type {import('tailwindcss').Config} */
-export default {
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  darkMode: 'class', // Enables manual and system dark mode switching
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
         geo: {
-          red: '#C8102E',
-          dark: '#0a0a0a',
-          gray: '#1a1a1a',
+          red: '#C8102E', // GEOTREXX Crimson
+          dark: '#0a0b10', // Rich off-black for premium dark mode
+          gray: '#1a1b23', // Elevated dark surface
+          light: '#f9fafb', // Light mode background
         }
       },
       animation: {
         'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         fadeInUp: {
@@ -29,4 +31,5 @@ export default {
   plugins: [
     require('@tailwindcss/typography'),
   ],
-};
+}
+export default config
