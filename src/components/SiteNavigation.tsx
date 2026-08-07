@@ -15,6 +15,22 @@ export default function SiteNavigation() {
 
   return (
     <>
+      {/* Inline CSS for the continuous ticker animation */}
+      <style>{`
+        @keyframes ticker {
+          0% { transform: translateX(100vw); }
+          100% { transform: translateX(-100%); }
+        }
+        .animate-ticker {
+          display: inline-block;
+          white-space: nowrap;
+          animation: ticker 30s linear infinite;
+        }
+        .ticker-container:hover .animate-ticker {
+          animation-play-state: paused;
+        }
+      `}</style>
+
       {/* Slide-out Sidebar */}
       {isSidebarOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]" onClick={() => setSidebarOpen(false)} />}
       <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-[#0a0b10] z-[90] transform transition-transform duration-300 border-r border-gray-200 dark:border-gray-800 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -33,42 +49,48 @@ export default function SiteNavigation() {
               {tab}
             </Link>
           ))}
+          <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+            <Link href="/creator" onClick={() => setSidebarOpen(false)} className="text-xl font-bold text-gray-900 dark:text-white hover:text-[#C8102E] transition-colors">
+              Our Creators
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Top Utility Bar */}
-      <div className="w-full bg-[#1a1b23] text-white py-1.5 px-4 text-xs font-medium tracking-wide flex justify-between items-center border-b border-[#C8102E]">
-        <div className="flex items-center gap-2">
+      {/* NEW: Scrolling Breaking News Ticker */}
+      <div className="w-full bg-[#C8102E] text-white py-1.5 px-4 text-xs font-bold tracking-widest flex items-center border-b border-red-900 overflow-hidden ticker-container relative z-50">
+        <div className="flex items-center gap-2 mr-4 flex-shrink-0 z-10 bg-[#C8102E] pr-2">
           <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C8102E] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C8102E]"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
           </span>
-          <span className="uppercase text-gray-300">Live: Global Markets Update</span>
+          <span className="uppercase">Breaking</span>
         </div>
-        <div className="hidden md:flex gap-6 text-gray-400">
-          {/* LINKED DIRECTLY TO THE NEW PAGES */}
-          <Link href="/login" className="hover:text-white uppercase font-bold tracking-wider transition-colors">Sign In</Link>
-          <Link href="/subscribe" className="hover:text-white uppercase font-bold tracking-wider transition-colors">Subscribe</Link>
+        <div className="flex-1 overflow-hidden relative">
+          <div className="animate-ticker text-white/90 uppercase">
+            Global Markets see unprecedented shifts &bull; Major political summit concludes in Accra &bull; Tech giants announce breakthrough AI frameworks &bull; GEOTREXX brings you the truth first.
+          </div>
+        </div>
+        <div className="hidden md:flex gap-6 text-white/80 ml-4 flex-shrink-0 z-10 bg-[#C8102E] pl-2 border-l border-red-800">
+          <Link href="/login" className="hover:text-white transition-colors">SIGN IN</Link>
+          <Link href="/subscribe" className="hover:text-white transition-colors">SUBSCRIBE</Link>
         </div>
       </div>
 
       {/* Main Centered Header */}
       <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-[#0a0b10]/95 backdrop-blur-md shadow-sm transition-all">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
-          
           <div className="flex-1">
             <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-gray-600 dark:text-gray-300 hover:text-[#C8102E] transition-colors flex items-center gap-2 font-bold uppercase text-sm tracking-widest">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
               <span className="hidden md:block">Menu</span>
             </button>
           </div>
-
           <div className="flex-1 flex justify-center">
             <Link href="/" className="block group">
               <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="h-12 w-12 md:h-14 md:w-14 object-cover rounded-full shadow-md bg-gray-100 dark:bg-gray-800 p-1 group-hover:opacity-80 transition-opacity" />
             </Link>
           </div>
-
           <div className="flex-1 flex justify-end items-center gap-4">
             <Link href="/search" className="p-2 text-gray-600 dark:text-gray-300 hover:text-[#C8102E] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
