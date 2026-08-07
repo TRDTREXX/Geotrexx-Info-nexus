@@ -5,16 +5,17 @@ import Link from 'next/link'
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 const getLatestPosts = async () => {
+  // 1. Updated query to perfectly match your schema API IDs
   const query = `
     query GetPosts {
-      posts(orderBy: createdAt_DESC, first: 7) {
+      posts(orderBy: publishedDate_DESC, first: 7) {
         id
         title
         slug
-        excerpt
-        createdAt
+        summary
+        publishedDate
         category
-        coverImage { url }
+        image { url }
       }
     }
   `
@@ -57,8 +58,9 @@ export default async function Home() {
         {/* Left: Massive Hero Story */}
         <Link href={`/news/${heroPost.slug}`} className="lg:w-2/3 group relative block overflow-hidden rounded-2xl shadow-xl bg-gray-900">
           <div className="relative h-[400px] md:h-[550px] w-full">
+            {/* 2. Mapped to your 'image' field */}
             <Image 
-              src={heroPost.coverImage?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167"} 
+              src={heroPost.image?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167"} 
               fill 
               className="object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-80" 
               alt={heroPost.title} 
@@ -72,8 +74,9 @@ export default async function Home() {
               <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4 group-hover:text-gray-300 transition-colors">
                 {heroPost.title}
               </h1>
+              {/* 3. Mapped to your 'summary' field */}
               <p className="text-gray-300 text-base md:text-lg line-clamp-2 leading-relaxed">
-                {heroPost.excerpt}
+                {heroPost.summary}
               </p>
             </div>
           </div>
@@ -86,7 +89,7 @@ export default async function Home() {
             {sidePosts.map((post: any) => (
               <Link href={`/news/${post.slug}`} key={post.id} className="group flex gap-4 items-center border-b border-gray-100 dark:border-gray-800 pb-6 last:border-0 last:pb-0">
                 <div className="relative h-20 w-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800">
-                  <Image src={post.coverImage?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167"} fill className="object-cover group-hover:scale-110 transition-transform duration-500" alt="thumb" />
+                  <Image src={post.image?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167"} fill className="object-cover group-hover:scale-110 transition-transform duration-500" alt="thumb" />
                 </div>
                 <div className="flex-grow">
                   <span className="text-[#C8102E] text-[9px] font-black uppercase tracking-widest block mb-1">
@@ -109,7 +112,18 @@ export default async function Home() {
             <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-widest">Latest Updates</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {gridPosts.map((post: any) => <NewsCard key={post.id} {...post} />)}
+            {/* 4. Mapping all correct fields to the NewsCard component */}
+            {gridPosts.map((post: any) => (
+              <NewsCard 
+                key={post.id}
+                title={post.title}
+                slug={post.slug}
+                excerpt={post.summary || "Click to read the full story and dive deep into the analysis."}
+                imageUrl={post.image?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80"}
+                category={post.category || "News"}
+                date={post.publishedDate}
+              />
+            ))}
           </div>
         </div>
       )}

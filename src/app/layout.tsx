@@ -35,8 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </p>
               <div className="space-y-3 text-sm text-gray-400 mb-8 font-medium">
                 <p className="flex items-center gap-3"><span className="text-[#C8102E]">📍</span> Accra, Greater Accra Region, Ghana</p>
-                <p className="flex items-center gap-3"><span className="text-[#C8102E]">✉️</span> editor@geotrexx.com</p>
-                <p className="flex items-center gap-3"><span className="text-[#C8102E]">📞</span> MTN Network Available Upon Request</p>
+                <p className="flex items-center gap-3"><span className="text-[#C8102E]">✉️</span> info@geotrexx.com</p>
+                {/* Replace the bracketed text with your actual MTN number */}
+                <p className="flex items-center gap-3"><span className="text-[#C8102E]">📞</span> +233 [Add Your MTN Number Here]</p>
               </div>
 
               {/* Verified Social Media Links */}
