@@ -1,122 +1,182 @@
+import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import ReadingProgressBar from '../../../components/ReadingProgressBar'
-const CMS_URL = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
-async function getArticle(slug: string) {
+const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
+
+// 1. Fetch the specific article data
+async function getPost(slug: string) {
   const query = `
-    query GetSingleArticle($slug: String!) {
-      articles(where: { slug: $slug }) {
-        id title category summary publishedAt
+    query GetPost($slug: String!) {
+      post(where: { slug: $slug }) {
+        id
+        title
+        slug
+        excerpt
         content { html }
-        image { url }
+        createdAt
+        updatedAt
+        category
+        coverImage { url }
+        author {
+          name
+          picture { url }
+        }
       }
     }
   `
-  const res = await fetch(CMS_URL, {
+  const res = await fetch(HYGRAPH_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, variables: { slug } }),
-    next: { revalidate: 60 }
+    next: { revalidate: 60 } // Enterprise edge caching
   })
+  
   const json = await res.json()
-  return json.data?.articles?.[0]
+  return json.data?.post
 }
 
-// Generate SEO Metadata dynamically
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const article = await getArticle(params.slug)
-  if (!article) return { title: 'Not Found' }
+// 2. Generate Dynamic SEO & Open Graph Metadata
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const post = await getPost(params.slug)
+  
+  if (!post) return { title: 'Not Found | GEOTREXX' }
 
   return {
-    title: `${article.title} | GEOTREXX`,
-    description: article.summary,
+    title: `${post.title} | GEOTREXX`,
+    description: post.excerpt,
     openGraph: {
-      images: [`/news/${params.slug}/opengraph-image`], // Triggers Edge OG generation
+      title: post.title,
+      description: post.excerpt,
+      type: 'article',
+      publishedTime: post.createdAt,
+      authors: [post.author?.name || 'GEOTREXX Editor'],
+      images: [
+        {
+          url: post.coverImage?.url,
+          width: 1200,
+          height: 630,
+          alt: post.title,
+        }
+      ],
     },
     twitter: {
       card: 'summary_large_image',
-      image: `/news/${params.slug}/opengraph-image`,
+      title: post.title,
+      description: post.excerpt,
+      images: [post.coverImage?.url],
     }
   }
 }
 
+// 3. The Page Component
 export default async function ArticlePage({ params }: { params: { slug: string } }) {
-  const article = await getArticle(params.slug)
+  const post = await getPost(params.slug)
 
-  if (!article) return (
-    <div className="min-h-screen flex items-center justify-center dark:bg-geo-dark">
-      <h1 className="text-3xl font-black text-geo-red uppercase tracking-widest">Article Not Found</h1>
-    </div>
-  )
+  if (!post) {
+    notFound()
+  }
 
-  // JSON-LD Structured Data for Google News
+  // Calculate rough reading time (avg 200 words per minute)
+  const wordCount = post.content.html.split(/\s+/).length
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200))
+
+  // 4. Google News JSON-LD Schema
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
-    headline: article.title,
-    image: [article.image?.url],
-    datePublished: article.publishedAt || new Date().toISOString(),
-    author: [{ '@type': 'Person', name: 'Orpheus Grant-Essilfie' }],
-    publisher: { '@type': 'Organization', name: 'GEOTREXX' }
+    headline: post.title,
+    image: [post.coverImage?.url],
+    datePublished: post.createdAt,
+    dateModified: post.updatedAt || post.createdAt,
+    author: [{
+      '@type': 'Person',
+      name: post.author?.name || 'GEOTREXX Staff',
+    }]
   }
 
   return (
-    <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+    <article className="w-full relative bg-[#f9fafb] dark:bg-[#0a0b10] min-h-screen">
       <ReadingProgressBar />
       
-      <article className="min-h-screen pb-24 bg-white dark:bg-geo-dark">
-        {/* Full Bleed Hero */}
-        <div className="w-full h-[50vh] md:h-[70vh] relative bg-gray-900">
-          {article?.image?.url && (
-            <Image src={article.image.url} alt={article.title} fill className="object-cover opacity-80" priority />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-geo-dark via-transparent to-transparent"></div>
+      {/* Inject Google Schema invisibly */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
+      {/* Hero Section */}
+      <header className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-10">
+        <div className="flex items-center gap-3 mb-6 text-sm font-bold tracking-widest uppercase">
+          <Link href={`/category/${post.category?.toLowerCase() || 'news'}`} className="text-[#C8102E] hover:opacity-80 transition-opacity">
+            {post.category || 'News'}
+          </Link>
+          <span className="text-gray-300 dark:text-gray-700">&bull;</span>
+          <span className="text-gray-500 dark:text-gray-400">{readingTime} MIN READ</span>
         </div>
+        
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 dark:text-white leading-[1.1] mb-6 tracking-tight">
+          {post.title}
+        </h1>
+        
+        <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed font-light mb-10">
+          {post.excerpt}
+        </p>
 
-        {/* Content Wrapper */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-32 relative z-10">
-          
-          {/* Header Block */}
-          <div className="bg-white dark:bg-geo-gray rounded-2xl p-8 md:p-12 shadow-2xl mb-12 border border-gray-100 dark:border-gray-800">
-            <span className="text-geo-red font-black uppercase tracking-widest text-sm mb-4 block">
-              {article?.category || 'Intelligence'}
-            </span>
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 dark:text-white leading-[1.1] tracking-tight mb-6">
-              {article?.title}
-            </h1>
-            <div className="flex items-center gap-4 text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest border-t border-gray-100 dark:border-gray-800 pt-6">
-              <span>By Orpheus Grant-Essilfie</span>
-              <span>•</span>
-              <span>{new Date(article?.publishedAt || Date.now()).toLocaleDateString()}</span>
-            </div>
-          </div>
-
-          {/* Typography Prose Content */}
-          <div 
-            className="prose prose-lg md:prose-xl dark:prose-invert prose-red prose-headings:font-black prose-p:font-serif prose-p:leading-relaxed max-w-none 
-                       first-letter:text-5xl first-letter:font-black first-letter:text-geo-red first-letter:float-left first-letter:mr-3 first-letter:-mt-1"
-            dangerouslySetInnerHTML={{ __html: article?.content?.html || '' }}
-          />
-
-          {/* Hardcoded Premium Author Bio */}
-          <div className="mt-20 p-8 md:p-10 bg-gray-50 dark:bg-gray-900 rounded-3xl flex flex-col md:flex-row items-center md:items-start gap-8 border border-gray-200 dark:border-gray-800">
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white dark:border-geo-dark shadow-xl shrink-0">
-              <Image src="/icon.png" alt="Orpheus Grant-Essilfie" width={96} height={96} className="object-cover" />
-            </div>
-            <div className="text-center md:text-left">
-              <h4 className="text-2xl font-black text-gray-900 dark:text-white mb-1">Orpheus Grant-Essilfie</h4>
-              <p className="text-geo-red text-xs font-black uppercase tracking-widest mb-4">Director, GEOTREXX Media Group</p>
-              <p className="text-gray-600 dark:text-gray-400 font-serif leading-relaxed">
-                Leading digital editorial strategy and sports analytics for the GEOTREXX network. 
-                Dedicated to bringing you the most accurate global news and live market insights.
+        {/* Author & Meta Block */}
+        <div className="flex items-center justify-between border-t border-b border-gray-200 dark:border-gray-800 py-4">
+          <div className="flex items-center gap-4">
+            {post.author?.picture?.url ? (
+              <Image src={post.author.picture.url} alt={post.author.name} width={48} height={48} className="rounded-full h-12 w-12 object-cover border-2 border-gray-100 dark:border-gray-800" />
+            ) : (
+              <div className="h-12 w-12 rounded-full bg-[#C8102E] flex items-center justify-center text-white font-bold text-lg">
+                {(post.author?.name || 'G')[0]}
+              </div>
+            )}
+            <div>
+              <p className="font-bold text-gray-900 dark:text-white">{post.author?.name || 'GEOTREXX Staff'}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Published {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
           </div>
-
+          
+          {/* Social Share Icons Placeholder (Desktop only) */}
+          <div className="hidden md:flex gap-3 text-gray-400">
+             <button className="hover:text-[#C8102E] transition-colors" aria-label="Share on X">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+             </button>
+             <button className="hover:text-[#C8102E] transition-colors" aria-label="Share on Facebook">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/></svg>
+             </button>
+          </div>
         </div>
-      </article>
-    </>
+      </header>
+
+      {/* Massive Full-Bleed Cover Image */}
+      {post.coverImage?.url && (
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+          <div className="relative w-full aspect-video md:aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl">
+            <Image 
+              src={post.coverImage.url} 
+              alt={post.title}
+              fill
+              priority
+              className="object-cover"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Article Content Wrapper */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 flex flex-col md:flex-row gap-10 relative">
+        
+        {/* The HTML Content from Hygraph injected into Tailwind Typography */}
+        <div 
+          className="prose prose-lg dark:prose-invert prose-headings:font-black prose-a:text-[#C8102E] hover:prose-a:opacity-80 prose-img:rounded-xl prose-img:shadow-lg w-full max-w-none"
+          dangerouslySetInnerHTML={{ __html: post.content.html }}
+        />
+        
+      </div>
+    </article>
   )
 }

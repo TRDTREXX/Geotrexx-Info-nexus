@@ -1,7 +1,12 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import "tailwindcss";
+@plugin "@tailwindcss/typography"; /* ADD THIS LINE */
 
+/* GEOTREXX Brand Colors for v4 */
+@theme {
+/* ... rest of your existing CSS ... */
 body {
   /* Bypassing @apply to prevent Vercel Turbopack crashes */
   color: #111827; /* Equivalent to text-gray-900 */
