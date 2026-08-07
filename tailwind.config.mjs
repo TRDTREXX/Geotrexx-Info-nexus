@@ -1,7 +1,6 @@
-import type { Config } from 'tailwindcss'
-
-const config: Config = {
-  darkMode: 'class', // Enables manual and system dark mode switching
+/** @type {import('tailwindcss').Config} */
+export default {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -11,10 +10,10 @@ const config: Config = {
     extend: {
       colors: {
         geo: {
-          red: '#C8102E', // GEOTREXX Crimson
-          dark: '#0a0b10', // Rich off-black for premium dark mode
-          gray: '#1a1b23', // Elevated dark surface
-          light: '#f9fafb', // Light mode background
+          red: '#C8102E',
+          dark: '#0a0b10',
+          gray: '#1a1b23',
+          light: '#f9fafb',
         }
       },
       animation: {
@@ -32,4 +31,3 @@ const config: Config = {
     require('@tailwindcss/typography'),
   ],
 }
-export default config
