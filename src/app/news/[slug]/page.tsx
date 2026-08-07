@@ -112,8 +112,9 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
         {/* Publisher Block */}
         <div className="flex flex-col gap-1 border-t border-b border-gray-200 dark:border-gray-800 py-6">
           <div className="flex items-center gap-3">
+            {/* 🚀 Matching the exact double-extension file name */}
             <img 
-              src="/orpheus.jpg" 
+              src="/orpheus.png.jpeg" 
               alt="Orpheus Grant-Essilfie" 
               className="w-12 h-12 rounded-full object-cover shadow-sm border border-gray-200 dark:border-gray-700" 
             />
