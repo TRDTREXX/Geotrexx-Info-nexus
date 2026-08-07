@@ -10,7 +10,7 @@ export async function generateMetadata({ params }) {
   try {
     const query = `
       query GetArticleMeta($slug: String!) {
-        articles(where: { OR: [{ slug: $slug }, { id: $slug }] }) {
+        articles(where: { slug: $slug }) {
           title
           summary
           image { url }
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }) {
     });
 
     const result = await response.json();
-    const article = result.data?.articles[0];
+    const article = result.data?.articles?.[0];
 
     if (article) {
       return {
@@ -70,7 +70,7 @@ export default async function ArticlePage({ params }) {
   try {
     const query = `
       query GetSingleArticle($slug: String!) {
-        articles(where: { OR: [{ slug: $slug }, { id: $slug }] }) {
+        articles(where: { slug: $slug }) {
           id
           title
           category
@@ -91,7 +91,13 @@ export default async function ArticlePage({ params }) {
     });
 
     const result = await response.json();
-    article = result.data?.articles[0];
+    
+    // Check for GraphQL errors in the background
+    if (result.errors) {
+      console.error("GraphQL Errors:", result.errors);
+    }
+
+    article = result.data?.articles?.[0];
   } catch (err) {
     console.error(err);
   }
