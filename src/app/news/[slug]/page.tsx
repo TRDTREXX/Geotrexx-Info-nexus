@@ -5,10 +5,13 @@ import ReadingProgressBar from '../../../components/ReadingProgressBar'
 
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
-async function getArticle(slug: string) {
+async function getArticle(rawSlug: string) {
+  const slug = decodeURIComponent(rawSlug)
+  // 🚀 BULLETPROOF QUERY: We query 'articles' (plural) and take the first match. 
+  // This bypasses all singular model naming errors in Hygraph.
   const query = `
     query GetArticle($slug: String!) {
-      article(where: { slug: $slug }) {
+      articles(where: { slug: $slug }, first: 1) {
         id
         title
         slug
@@ -30,7 +33,10 @@ async function getArticle(slug: string) {
     
     const json = await res.json()
     if (json.errors) return { article: null, error: json.errors[0].message }
-    return { article: json.data?.article || null, error: null }
+    
+    // Extract the first article from the array
+    const foundArticle = json.data?.articles?.[0] || null
+    return { article: foundArticle, error: null }
   } catch (error: any) {
     return { article: null, error: error.message }
   }
@@ -64,7 +70,7 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
       <div className="w-full py-32 flex flex-col items-center justify-center text-center px-4 min-h-[60vh]">
         <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-2xl p-8 max-w-2xl">
           <h2 className="text-2xl font-black text-red-600 dark:text-red-400 mb-4 uppercase tracking-widest">Article Render Error</h2>
-          <p className="text-gray-700 dark:text-gray-300 font-mono text-sm break-words">{error || "Article not found in database."}</p>
+          <p className="text-gray-700 dark:text-gray-300 font-mono text-sm break-words">{error || "Article not found in database. Check your URL slug."}</p>
           <Link href="/" className="mt-8 inline-block text-[#C8102E] font-bold uppercase hover:underline">Return Home</Link>
         </div>
       </div>
@@ -75,7 +81,6 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
   const readingTime = Math.max(1, Math.ceil(wordCount / 200))
   const displayCategory = (!article.category || article.category.toLowerCase() === 'general news') ? 'World' : article.category;
 
-  // Fallback safe date formatting
   let formattedDate = 'Recent'
   let formattedTime = ''
   if (article.publishedDate) {
@@ -107,7 +112,7 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
           {article.summary}
         </p>
 
-        {/* Publisher Block */}
+        {/* 🚀 Publisher Block matching your Exhibit */}
         <div className="flex flex-col gap-1 border-t border-b border-gray-200 dark:border-gray-800 py-6">
           <div className="flex items-center gap-3">
             <img 

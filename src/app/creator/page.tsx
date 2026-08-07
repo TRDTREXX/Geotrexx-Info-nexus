@@ -1,5 +1,3 @@
-import Image from 'next/image'
-
 export const metadata = {
   title: 'Founders | GEOTREXX',
 }
@@ -17,12 +15,12 @@ export default function CreatorPage() {
         
         {/* Orpheus Profile */}
         <div className="bg-white dark:bg-[#1a1b23] rounded-3xl overflow-hidden shadow-xl border border-gray-100 dark:border-gray-800 flex flex-col md:flex-row">
-          <div className="md:w-2/5 bg-gray-200 dark:bg-gray-800 relative h-96 md:h-auto">
-            <Image 
+          <div className="md:w-2/5 bg-gray-200 dark:bg-gray-800">
+            <img 
               src="/orpheus.jpg" 
               alt="Orpheus Grant-Essilfie" 
-              fill 
-              className="object-cover transition-all duration-700"
+              className="w-full h-96 md:h-full object-cover object-top"
+              onError={(e) => { e.currentTarget.src = "/orpheus.jpeg" }}
             />
           </div>
           <div className="md:w-3/5 p-10 md:p-14 flex flex-col justify-center">
@@ -36,12 +34,12 @@ export default function CreatorPage() {
 
         {/* Quist Profile */}
         <div className="bg-white dark:bg-[#1a1b23] rounded-3xl overflow-hidden shadow-xl border border-gray-100 dark:border-gray-800 flex flex-col md:flex-row-reverse">
-          <div className="md:w-2/5 bg-gray-200 dark:bg-gray-800 relative h-96 md:h-auto">
-            <Image 
+          <div className="md:w-2/5 bg-gray-200 dark:bg-gray-800">
+            <img 
               src="/quist.jpg" 
               alt="Quist Ebenezer Assan" 
-              fill 
-              className="object-cover transition-all duration-700"
+              className="w-full h-96 md:h-full object-cover object-top"
+              onError={(e) => { e.currentTarget.src = "/quist.jpeg" }}
             />
           </div>
           <div className="md:w-3/5 p-10 md:p-14 flex flex-col justify-center">

@@ -30,7 +30,7 @@ export default function SiteNavigation() {
         }
       `}</style>
 
-      {/* Sidebar */}
+      {/* Sidebar - Creator Link Removed */}
       {isSidebarOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]" onClick={() => setSidebarOpen(false)} />}
       <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-[#0a0b10] z-[90] transform transition-transform duration-300 border-r border-gray-200 dark:border-gray-800 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
@@ -51,7 +51,6 @@ export default function SiteNavigation() {
         </div>
       </div>
 
-      {/* Breaking News Ticker */}
       <div className="w-full bg-black text-white py-1.5 px-4 text-xs font-bold tracking-widest flex items-center overflow-hidden ticker-container relative z-50 border-b border-gray-900">
         <div className="flex items-center gap-2 mr-4 flex-shrink-0 z-10 bg-black pr-2">
           <span className="flex h-2 w-2 relative">
@@ -71,7 +70,7 @@ export default function SiteNavigation() {
         </div>
       </div>
 
-      {/* 🚀 MAIN HEADER: Crimson Dominant in Light, Black w/ Crimson Accent in Dark */}
+      {/* 🚀 MAIN HEADER: Crimson+White (Light Mode) | Black+Crimson (Dark Mode) */}
       <header className="sticky top-0 z-50 w-full bg-[#C8102E] dark:bg-[#0a0b10] border-t-0 dark:border-t-[4px] dark:border-[#C8102E] shadow-md transition-colors duration-300">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex-1">
@@ -93,7 +92,7 @@ export default function SiteNavigation() {
           </div>
         </div>
 
-        {/* TABS - Crimson with subtle white line in light mode, Black with gray line in dark */}
+        {/* TABS - Crimson with subtle white divider in Light Mode, Black with Gray divider in Dark */}
         <div className="w-full bg-[#C8102E] dark:bg-[#0a0b10] border-t border-white/20 dark:border-gray-900 hidden md:block overflow-x-auto shadow-sm transition-colors duration-300">
           <div className="max-w-[1400px] mx-auto px-4 flex justify-center gap-10 py-3">
             {tabs.map((tab) => (
