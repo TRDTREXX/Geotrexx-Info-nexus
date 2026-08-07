@@ -103,20 +103,7 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
         {/* 🚀 Exhibit-Matched Publisher Block */}
         <div className="flex flex-col gap-1 border-t border-b border-gray-200 dark:border-gray-800 py-6">
           <div className="flex items-center gap-3">
-            <Image src="/orpheus.jpg" alt="Orpheus Grant-Essilfie" width={48} height={48} className="w-12 h-12 rounded-full object-cover shadow-sm" />
-            <p className="text-lg text-gray-900 dark:text-white">
-              By <span className="font-bold">Orpheus Grant-Essilfie</span>
-            </p>
-          </div>
-          <p className="text-gray-700 dark:text-gray-400 text-sm pl-[60px] font-medium">
-            {formattedDate} {formattedTime} GMT
-          </p>
-        </div>
-      </header>
-
-      {/* 🚀 Exhibit-Matched Publisher Block */}
-        <div className="flex flex-col gap-1 border-t border-b border-gray-200 dark:border-gray-800 py-6">
-          <div className="flex items-center gap-3">
+            {/* Standard img tag to prevent Next.js zero-height bugs */}
             <img 
               src="/orpheus.jpg" 
               onError={(e) => { e.currentTarget.src = "/orpheus.jpeg" }}
@@ -131,3 +118,24 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
             {formattedDate} {formattedTime} GMT
           </p>
         </div>
+      </header>
+
+      {/* Main Cover Image */}
+      {article.image?.url && (
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+          <div className="relative w-full aspect-video md:aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl">
+            <Image src={article.image.url} alt={article.title} fill priority className="object-cover" />
+          </div>
+        </div>
+      )}
+
+      {/* Article Body */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 flex flex-col md:flex-row gap-10 relative">
+        <div 
+          className="prose prose-lg dark:prose-invert prose-headings:font-black prose-a:text-[#C8102E] hover:prose-a:opacity-80 prose-img:rounded-xl prose-img:shadow-lg w-full max-w-none"
+          dangerouslySetInnerHTML={{ __html: article.content?.html || '' }}
+        />
+      </div>
+    </article>
+  )
+}
