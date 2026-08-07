@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import ReadingProgressBar from '../../../components/ReadingProgressBar'
+import SmartImage from '../../../components/SmartImage'
 
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
@@ -16,6 +17,7 @@ async function getArticle(rawSlug: string) {
         summary
         content { html }
         publishedDate
+        publishedAt
         category
         image { url }
       }
@@ -52,7 +54,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       title: article.title,
       description: article.summary,
       type: 'article',
-      publishedTime: article.publishedDate,
+      publishedTime: article.publishedDate || article.publishedAt,
       images: [{ url: article.image?.url || '', width: 1200, height: 630, alt: article.title || 'News' }],
     },
   }
@@ -78,10 +80,12 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
   const readingTime = Math.max(1, Math.ceil(wordCount / 200))
   const displayCategory = (!article.category || article.category.toLowerCase() === 'general news') ? 'World' : article.category;
 
+  // 🚀 Uses fallback system date if the custom publishedDate field is empty
+  const dateToUse = article.publishedDate || article.publishedAt
   let formattedDate = 'Recent'
   let formattedTime = ''
-  if (article.publishedDate) {
-    const dateObj = new Date(article.publishedDate)
+  if (dateToUse) {
+    const dateObj = new Date(dateToUse)
     if (!isNaN(dateObj.getTime())) {
       formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       formattedTime = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase() + ' GMT'
@@ -112,10 +116,9 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
         {/* Publisher Block */}
         <div className="flex flex-col gap-1 border-t border-b border-gray-200 dark:border-gray-800 py-6">
           <div className="flex items-center gap-3">
-            {/* 🚀 Matching the exact double-extension file name */}
-            <img 
-              src="/orpheus.png.jpeg" 
-              alt="Orpheus Grant-Essilfie" 
+            <SmartImage 
+              baseName="orpheus" 
+              altName="Orpheus Grant-Essilfie" 
               className="w-12 h-12 rounded-full object-cover shadow-sm border border-gray-200 dark:border-gray-700" 
             />
             <p className="text-lg text-gray-900 dark:text-white">

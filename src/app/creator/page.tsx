@@ -1,3 +1,5 @@
+import SmartImage from '../../components/SmartImage'
+
 export const metadata = {
   title: 'Founders | GEOTREXX',
 }
@@ -16,10 +18,9 @@ export default function CreatorPage() {
         {/* Orpheus Profile */}
         <div className="bg-white dark:bg-[#1a1b23] rounded-3xl overflow-hidden shadow-xl border border-gray-100 dark:border-gray-800 flex flex-col md:flex-row">
           <div className="md:w-2/5 bg-gray-200 dark:bg-gray-800">
-            {/* 🚀 Using the exact file name your computer created */}
-            <img 
-              src="/orpheus.png.jpeg" 
-              alt="Orpheus Grant-Essilfie" 
+            <SmartImage 
+              baseName="orpheus" 
+              altName="Orpheus Grant-Essilfie" 
               className="w-full h-96 md:h-full object-cover object-top"
             />
           </div>
@@ -35,10 +36,9 @@ export default function CreatorPage() {
         {/* Quist Profile */}
         <div className="bg-white dark:bg-[#1a1b23] rounded-3xl overflow-hidden shadow-xl border border-gray-100 dark:border-gray-800 flex flex-col md:flex-row-reverse">
           <div className="md:w-2/5 bg-gray-200 dark:bg-gray-800">
-            {/* 🚀 Using the exact file name your computer created */}
-            <img 
-              src="/quist.png.jpeg" 
-              alt="Quist Ebenezer Assan" 
+            <SmartImage 
+              baseName="quist" 
+              altName="Quist Ebenezer Assan" 
               className="w-full h-96 md:h-full object-cover object-top"
             />
           </div>
