@@ -1,21 +1,39 @@
 'use client'
 import { useEffect, useState } from 'react'
 
-export default function ReadingProgressBar() {
-  const [width, setWidth] = useState(0)
+export default function ThemeToggle() {
+  const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTotal = document.documentElement.scrollTop
-      const heightWin = document.documentElement.scrollHeight - document.documentElement.clientHeight
-      const scroll = `${(scrollTotal / heightWin) * 100}%`
-      setWidth(scrollTotal / heightWin * 100)
+    // Check local storage or system preference on mount
+    const storedTheme = localStorage.getItem('theme')
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+
+    if (storedTheme === 'dark' || (!storedTheme && systemPrefersDark)) {
+      document.documentElement.classList.add('dark')
+      setIsDark(true)
     }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  const toggleTheme = () => {
+    if (isDark) {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+      setIsDark(false)
+    } else {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+      setIsDark(true)
+    }
+  }
+
   return (
-    <div className="fixed top-0 left-0 z-[100] h-1 bg-geo-red transition-all duration-150 ease-out" style={{ width: `${width}%` }} />
+    <button 
+      onClick={toggleTheme} 
+      className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-[#C8102E]"
+      aria-label="Toggle Dark Mode"
+    >
+      {isDark ? '☀️' : '🌙'}
+    </button>
   )
 }
