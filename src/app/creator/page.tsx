@@ -20,7 +20,6 @@ export default function CreatorPage() {
               src="/orpheus.jpg" 
               alt="Orpheus Grant-Essilfie" 
               className="w-full h-96 md:h-full object-cover object-top"
-              onError={(e) => { e.currentTarget.src = "/orpheus.jpeg" }}
             />
           </div>
           <div className="md:w-3/5 p-10 md:p-14 flex flex-col justify-center">
@@ -39,7 +38,6 @@ export default function CreatorPage() {
               src="/quist.jpg" 
               alt="Quist Ebenezer Assan" 
               className="w-full h-96 md:h-full object-cover object-top"
-              onError={(e) => { e.currentTarget.src = "/quist.jpeg" }}
             />
           </div>
           <div className="md:w-3/5 p-10 md:p-14 flex flex-col justify-center">

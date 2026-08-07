@@ -7,8 +7,6 @@ const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00m
 
 async function getArticle(rawSlug: string) {
   const slug = decodeURIComponent(rawSlug)
-  // 🚀 BULLETPROOF QUERY: We query 'articles' (plural) and take the first match. 
-  // This bypasses all singular model naming errors in Hygraph.
   const query = `
     query GetArticle($slug: String!) {
       articles(where: { slug: $slug }, first: 1) {
@@ -34,7 +32,6 @@ async function getArticle(rawSlug: string) {
     const json = await res.json()
     if (json.errors) return { article: null, error: json.errors[0].message }
     
-    // Extract the first article from the array
     const foundArticle = json.data?.articles?.[0] || null
     return { article: foundArticle, error: null }
   } catch (error: any) {
@@ -112,12 +109,11 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
           {article.summary}
         </p>
 
-        {/* 🚀 Publisher Block matching your Exhibit */}
+        {/* Publisher Block */}
         <div className="flex flex-col gap-1 border-t border-b border-gray-200 dark:border-gray-800 py-6">
           <div className="flex items-center gap-3">
             <img 
               src="/orpheus.jpg" 
-              onError={(e) => { e.currentTarget.src = "/orpheus.jpeg" }}
               alt="Orpheus Grant-Essilfie" 
               className="w-12 h-12 rounded-full object-cover shadow-sm border border-gray-200 dark:border-gray-700" 
             />
