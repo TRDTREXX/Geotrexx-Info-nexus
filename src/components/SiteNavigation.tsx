@@ -5,53 +5,21 @@ import ThemeToggle from './ThemeToggle'
 
 export default function SiteNavigation() {
   const [isSidebarOpen, setSidebarOpen] = useState(false)
-  const [authModal, setAuthModal] = useState<'signin' | 'subscribe' | null>(null)
 
   useEffect(() => {
-    if (isSidebarOpen || authModal) document.body.style.overflow = 'hidden'
+    if (isSidebarOpen) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = 'auto'
-  }, [isSidebarOpen, authModal])
+  }, [isSidebarOpen])
 
   const tabs = ['Politics', 'Business', 'Sports', 'Technology', 'Entertainment', 'World', 'Opinion']
 
   return (
     <>
-      {/* Authentication Modal */}
-      {authModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 transition-opacity">
-          <div className="bg-white dark:bg-[#1a1b23] p-8 rounded-2xl shadow-2xl max-w-md w-full relative border border-gray-200 dark:border-gray-800">
-            <button onClick={() => setAuthModal(null)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <div className="text-center mb-6">
-              {/* ROUNDED MODAL LOGO */}
-              <img src="/geotrexx-logo.png" alt="GEOTREXX" className="h-14 w-14 mx-auto mb-4 object-cover rounded-full shadow-md bg-gray-100 dark:bg-gray-800 p-1" />
-              <h2 className="text-2xl font-black uppercase tracking-widest text-gray-900 dark:text-white">
-                {authModal === 'signin' ? 'Welcome Back' : 'Join the Elite'}
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                {authModal === 'signin' ? 'Sign in to access premium analytics and saved articles.' : 'Subscribe for unrestricted access to world-class journalism.'}
-              </p>
-            </div>
-            <form onSubmit={(e) => { e.preventDefault(); alert('Authentication endpoint connecting...') }}>
-              <input type="email" placeholder="Email Address" className="w-full bg-gray-50 dark:bg-[#0a0b10] border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:border-[#C8102E] dark:text-white transition-colors" required />
-              {authModal === 'signin' && (
-                <input type="password" placeholder="Password" className="w-full bg-gray-50 dark:bg-[#0a0b10] border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-3 mb-6 focus:outline-none focus:border-[#C8102E] dark:text-white transition-colors" required />
-              )}
-              <button type="submit" className="w-full bg-[#C8102E] text-white font-bold uppercase tracking-widest py-3 rounded-lg hover:bg-red-800 transition-colors">
-                {authModal === 'signin' ? 'Sign In' : 'Subscribe Now'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Slide-out Sidebar */}
       {isSidebarOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]" onClick={() => setSidebarOpen(false)} />}
       <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-[#0a0b10] z-[90] transform transition-transform duration-300 border-r border-gray-200 dark:border-gray-800 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
           <Link href="/" onClick={() => setSidebarOpen(false)} className="block">
-            {/* ROUNDED SIDEBAR LOGO */}
             <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="h-10 w-10 object-cover rounded-full shadow-sm bg-gray-100 dark:bg-gray-800 p-1" />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="text-gray-500 hover:text-[#C8102E] transition-colors">
@@ -78,8 +46,9 @@ export default function SiteNavigation() {
           <span className="uppercase text-gray-300">Live: Global Markets Update</span>
         </div>
         <div className="hidden md:flex gap-6 text-gray-400">
-          <button onClick={() => setAuthModal('signin')} className="hover:text-white uppercase font-bold tracking-wider transition-colors">Sign In</button>
-          <button onClick={() => setAuthModal('subscribe')} className="hover:text-white uppercase font-bold tracking-wider transition-colors">Subscribe</button>
+          {/* LINKED DIRECTLY TO THE NEW PAGES */}
+          <Link href="/login" className="hover:text-white uppercase font-bold tracking-wider transition-colors">Sign In</Link>
+          <Link href="/subscribe" className="hover:text-white uppercase font-bold tracking-wider transition-colors">Subscribe</Link>
         </div>
       </div>
 
@@ -96,7 +65,6 @@ export default function SiteNavigation() {
 
           <div className="flex-1 flex justify-center">
             <Link href="/" className="block group">
-              {/* ROUNDED CENTER LOGO */}
               <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="h-12 w-12 md:h-14 md:w-14 object-cover rounded-full shadow-md bg-gray-100 dark:bg-gray-800 p-1 group-hover:opacity-80 transition-opacity" />
             </Link>
           </div>

@@ -22,7 +22,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
 
-        {/* ENTERPRISE FOOTER */}
         <footer className="bg-[#0a0b10] text-white pt-20 pb-10 border-t-4 border-[#C8102E] mt-20">
           <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
             
@@ -69,7 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </ul>
             </div>
 
-            {/* Column 3: Portal Links */}
+            {/* Column 3: Portal Links (Hard-linked to new dedicated pages) */}
             <div>
               <h4 className="font-bold uppercase tracking-wider mb-6 text-[#C8102E]">Portal</h4>
               <ul className="space-y-3 text-gray-400 text-sm font-medium">
@@ -80,14 +79,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 </li>
                 <li>
-                  {/* Note: Clicking this triggers a scroll to top, where users can use the top bar Sign In */}
-                  <Link href="#" className="hover:text-white transition-colors flex items-center gap-2 group">
+                  <Link href="/login" className="hover:text-white transition-colors flex items-center gap-2 group">
                     <svg className="w-4 h-4 group-hover:text-[#C8102E] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg> 
                     Member Login
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white transition-colors flex items-center gap-2 group">
+                  <Link href="/subscribe" className="hover:text-white transition-colors flex items-center gap-2 group">
                     <svg className="w-4 h-4 group-hover:text-[#C8102E] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg> 
                     Subscribe
                   </Link>
