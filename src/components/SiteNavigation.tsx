@@ -51,7 +51,8 @@ export default function SiteNavigation() {
         </div>
       </div>
 
-      <div className="w-full bg-black text-white py-1.5 px-4 text-xs font-bold tracking-widest flex items-center overflow-hidden ticker-container relative z-50">
+      {/* Breaking News Ticker */}
+      <div className="w-full bg-black text-white py-1.5 px-4 text-xs font-bold tracking-widest flex items-center overflow-hidden ticker-container relative z-50 border-b border-gray-900">
         <div className="flex items-center gap-2 mr-4 flex-shrink-0 z-10 bg-black pr-2">
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C8102E] opacity-75"></span>
@@ -70,37 +71,35 @@ export default function SiteNavigation() {
         </div>
       </div>
 
-      {/* Main Centered Header - White in Light Mode, Black in Dark Mode with Elite Crimson Accents */}
-      {/* 🚀 ELITE STRIPE 1: The thick top border */}
-      <header className="sticky top-0 z-50 w-full bg-white dark:bg-[#0a0b10] border-t-[6px] border-[#C8102E] shadow-sm transition-colors duration-300">
-        
+      {/* 🚀 MAIN HEADER: Crimson Dominant in Light, Black w/ Crimson Accent in Dark */}
+      <header className="sticky top-0 z-50 w-full bg-[#C8102E] dark:bg-[#0a0b10] border-t-0 dark:border-t-[4px] dark:border-[#C8102E] shadow-md transition-colors duration-300">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex-1">
-            <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-gray-900 dark:text-white hover:text-[#C8102E] transition-colors flex items-center gap-2 font-bold uppercase text-sm tracking-widest">
+            <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-white hover:text-white/80 dark:text-white dark:hover:text-[#C8102E] transition-colors flex items-center gap-2 font-bold uppercase text-sm tracking-widest">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
               <span className="hidden md:block">Menu</span>
             </button>
           </div>
           <div className="flex-1 flex justify-center">
             <Link href="/" className="block group">
-              <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="h-12 w-12 md:h-14 md:w-14 object-cover rounded-full shadow-md bg-white p-1 group-hover:opacity-90 transition-opacity border border-gray-200 dark:border-gray-800" />
+              <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="h-12 w-12 md:h-14 md:w-14 object-cover rounded-full shadow-lg bg-white p-1 group-hover:opacity-90 transition-opacity border-2 border-white/20 dark:border-none" />
             </Link>
           </div>
-          <div className="flex-1 flex justify-end items-center gap-4 text-gray-900 dark:text-white">
-            <Link href="/search" className="p-2 hover:text-[#C8102E] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+          <div className="flex-1 flex justify-end items-center gap-4 text-white">
+            <Link href="/search" className="p-2 text-white hover:text-white/80 dark:text-white dark:hover:text-[#C8102E] hover:bg-white/10 dark:hover:bg-gray-800 rounded-full transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </Link>
             <ThemeToggle />
           </div>
         </div>
 
-        {/* 🚀 ELITE STRIPE 2: The divider line separating the logo from the tabs */}
-        <div className="w-full bg-white dark:bg-[#0a0b10] border-t border-b border-[#C8102E]/30 dark:border-[#C8102E]/50 hidden md:block overflow-x-auto shadow-sm transition-colors duration-300">
+        {/* TABS - Crimson with subtle white line in light mode, Black with gray line in dark */}
+        <div className="w-full bg-[#C8102E] dark:bg-[#0a0b10] border-t border-white/20 dark:border-gray-900 hidden md:block overflow-x-auto shadow-sm transition-colors duration-300">
           <div className="max-w-[1400px] mx-auto px-4 flex justify-center gap-10 py-3">
             {tabs.map((tab) => (
-              <Link key={tab} href={`/category/${tab.toLowerCase()}`} className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-gray-300 hover:text-[#C8102E] dark:hover:text-[#C8102E] transition-colors relative group py-1">
+              <Link key={tab} href={`/category/${tab.toLowerCase()}`} className="text-xs font-black uppercase tracking-widest text-white hover:text-gray-200 dark:text-gray-400 dark:hover:text-[#C8102E] transition-colors relative group py-1">
                 {tab}
-                <span className="absolute -bottom-1 left-0 w-0 h-[3px] bg-[#C8102E] transition-all group-hover:w-full"></span>
+                <span className="absolute -bottom-1 left-0 w-0 h-[3px] bg-white dark:bg-[#C8102E] transition-all group-hover:w-full"></span>
               </Link>
             ))}
           </div>
