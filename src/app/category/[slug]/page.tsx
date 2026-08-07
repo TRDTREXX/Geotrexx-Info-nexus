@@ -4,7 +4,6 @@ import Link from 'next/link'
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 const getCategoryArticles = async (categorySlug: string) => {
-  // We fetch all articles and filter on the frontend to guarantee we catch the category regardless of capitalization in Hygraph
   const query = `
     query GetAllArticles {
       articles(orderBy: publishedDate_DESC, first: 100) {
@@ -23,7 +22,7 @@ const getCategoryArticles = async (categorySlug: string) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
-      next: { revalidate: 0 } // Force fresh for debugging
+      next: { revalidate: 0 }
     })
     const json = await res.json()
     
@@ -31,10 +30,8 @@ const getCategoryArticles = async (categorySlug: string) => {
 
     const allArticles = json.data?.articles || []
 
-    // Robust category matching
     const filtered = allArticles.filter((article: any) => {
       if (!article.category) return false;
-      // Normalizes strings so "General News" matches "general-news"
       const catA = article.category.toLowerCase().replace(/[^a-z0-9]/g, '')
       const catB = categorySlug.toLowerCase().replace(/[^a-z0-9]/g, '')
       return catA === catB
@@ -46,7 +43,9 @@ const getCategoryArticles = async (categorySlug: string) => {
   }
 }
 
-export default async function CategoryPage({ params }: { params: { slug: string } }) {
+// Fixed for Next.js 15 parameter Promises
+export default async function CategoryPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const { data: articles, error } = await getCategoryArticles(params.slug)
   
   const formatTitle = (slug: string) => {

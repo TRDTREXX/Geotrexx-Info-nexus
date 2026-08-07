@@ -36,8 +36,11 @@ async function getArticle(slug: string) {
   }
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+// Fixed for Next.js 15 parameter Promises
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const { article } = await getArticle(params.slug)
+  
   if (!article) return { title: 'Article Not Found | GEOTREXX' }
 
   return {
@@ -53,10 +56,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-export default async function ArticlePage({ params }: { params: { slug: string } }) {
+// Fixed for Next.js 15 parameter Promises
+export default async function ArticlePage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const { article, error } = await getArticle(params.slug)
 
-  // 🚨 Diagnostic UI instead of blind 404
   if (error || !article) {
     return (
       <div className="w-full py-32 flex flex-col items-center justify-center text-center px-4 min-h-[60vh]">
@@ -72,7 +76,7 @@ export default async function ArticlePage({ params }: { params: { slug: string }
           )}
           {!error && (
              <p className="font-mono text-sm bg-white dark:bg-black p-4 rounded border border-gray-200 dark:border-gray-800 text-left">
-               The GraphQL query returned null. This usually means the "slug" in the URL doesn't perfectly match the "slug" in Hygraph.
+               The GraphQL query returned null. Check that this slug exists in Hygraph.
              </p>
           )}
           <Link href="/" className="mt-8 inline-block text-[#C8102E] font-bold uppercase hover:underline">Return Home</Link>
