@@ -36,7 +36,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="space-y-3 text-sm text-gray-400 mb-8 font-medium">
                 <p className="flex items-center gap-3"><span className="text-[#C8102E]">📍</span> Accra, Greater Accra Region, Ghana</p>
                 <p className="flex items-center gap-3"><span className="text-[#C8102E]">✉️</span> info@geotrexx.com</p>
-                {/* Replace the bracketed text with your actual MTN number */}
                 <p className="flex items-center gap-3"><span className="text-[#C8102E]">📞</span> +233 53 553 1860</p>
               </div>
 
@@ -60,7 +59,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <li><Link href="/category/world" className="hover:text-white hover:translate-x-1 transition-all inline-block">World News</Link></li>
                 <li><Link href="/category/business" className="hover:text-white hover:translate-x-1 transition-all inline-block">Markets</Link></li>
                 <li><Link href="/category/technology" className="hover:text-white hover:translate-x-1 transition-all inline-block">Tech</Link></li>
-                <li><Link href="/creator" className="hover:text-white hover:translate-x-1 transition-all inline-block">Our Creators</Link></li>
               </ul>
             </div>
 
@@ -89,6 +87,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="max-w-[1400px] mx-auto px-6 border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
             <p>Copyright © {new Date().getFullYear()} GEOTREXX Media Group. All Rights Reserved.</p>
             <div className="flex gap-4 mt-4 md:mt-0">
+              {/* Creator link moved here for subtlety */}
+              <Link href="/creator" className="hover:text-white transition-colors font-medium">Network Creator</Link>
               <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
               <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
             </div>
