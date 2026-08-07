@@ -1,7 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import ReadingProgressBar from '@/components/ReadingProgressBar' // See component below
-
+import ReadingProgressBar from '../../../components/ReadingProgressBar'
 const CMS_URL = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 async function getArticle(slug: string) {
