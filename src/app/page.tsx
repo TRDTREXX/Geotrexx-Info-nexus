@@ -2,17 +2,23 @@ import NewsCard from '../components/NewsCard'
 import Image from 'next/image'
 import Link from 'next/link'
 
+// 🚀 FORCES NEXT.JS TO NEVER CACHE THIS PAGE
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 const getLatestArticles = async () => {
+  // Sorts by the system published time so the absolute newest is ALWAYS first
   const query = `
     query GetArticles {
-      articles(orderBy: publishedDate_DESC, first: 7) {
+      articles(orderBy: publishedAt_DESC, first: 7) {
         id
         title
         slug
         summary
         publishedDate
+        publishedAt
         category
         image { url }
       }
@@ -23,25 +29,20 @@ const getLatestArticles = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
-      next: { revalidate: 60 }
+      next: { revalidate: 0 } // Double-layer cache bypass
     })
     
     const json = await res.json()
-    
-    if (json.errors) {
-      return { data: null, error: json.errors[0].message }
-    }
-    
+    if (json.errors) return { data: null, error: json.errors[0].message }
     return { data: json.data?.articles || null, error: null }
   } catch (error: any) {
     return { data: null, error: error.message }
   }
 }
 
-// 🚀 Frontend Safety Net: Catches obsolete Hygraph categories
 const getDisplayCategory = (cat: string) => {
   if (!cat) return 'News'
-  if (cat.toLowerCase() === 'general news') return 'World' // Remaps General News to World
+  if (cat.toLowerCase() === 'general news') return 'World'
   return cat
 }
 
@@ -62,7 +63,7 @@ export default async function Home() {
   if (!articles || articles.length === 0) {
     return (
       <div className="w-full py-32 flex flex-col items-center justify-center text-center">
-        <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-300">No Stories Available</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">No Stories Available</h2>
       </div>
     )
   }
@@ -138,7 +139,7 @@ export default async function Home() {
                 excerpt={article.summary || "Click to read the full story and dive deep into the analysis."}
                 imageUrl={article.image?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80"}
                 category={getDisplayCategory(article.category)}
-                date={article.publishedDate}
+                date={article.publishedDate || article.publishedAt}
               />
             ))}
           </div>
