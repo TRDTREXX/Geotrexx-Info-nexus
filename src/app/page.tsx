@@ -2,7 +2,7 @@ import NewsCard from '../components/NewsCard'
 import Image from 'next/image'
 import Link from 'next/link'
 
-// 🚀 TRIPLE-LAYER CACHE KILL SWITCH FOR NEXT.JS
+// 🚀 MAXIMUM CACHE OVERRIDE
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -10,10 +10,10 @@ export const fetchCache = 'force-no-store';
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 const getLatestArticles = async () => {
-  // 🚀 Restored sorting to your custom 'publishedDate' field!
+  // We request MORE articles so we have a large pool to manually sort
   const query = `
     query GetArticles {
-      articles(orderBy: publishedDate_DESC, first: 16) {
+      articles(first: 30) {
         id
         title
         slug
@@ -30,13 +30,24 @@ const getLatestArticles = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
-      cache: 'no-store',
-      next: { revalidate: 0 } 
+      cache: 'no-store'
     })
     
     const json = await res.json()
     if (json.errors) return { data: null, error: json.errors[0].message }
-    return { data: json.data?.articles || null, error: null }
+    
+    let articles = json.data?.articles || [];
+    
+    // 🚀 BULLETPROOF FRONTEND SORTING
+    // We sort the array manually using JavaScript Date logic to guarantee the newest is #1
+    articles.sort((a: any, b: any) => {
+      // Use publishedDate if available, fallback to publishedAt
+      const dateA = new Date(a.publishedDate || a.publishedAt || 0).getTime();
+      const dateB = new Date(b.publishedDate || b.publishedAt || 0).getTime();
+      return dateB - dateA; // Descending order (newest first)
+    });
+
+    return { data: articles.slice(0, 16), error: null }
   } catch (error: any) {
     return { data: null, error: error.message }
   }

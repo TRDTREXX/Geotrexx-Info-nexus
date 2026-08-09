@@ -8,16 +8,19 @@ export const metadata = {
   description: 'Premium digital destination for global news, sports analytics, and deep editorial coverage.',
 }
 
-export const revalidate = 0; 
+// 🚀 MAXIMUM CACHE OVERRIDE
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 async function getDynamicTickerHeadlines() {
-  // 🚀 Restored sorting to your custom 'publishedDate' field here too!
   const query = `
     query GetHeadlines {
-      articles(orderBy: publishedDate_DESC, first: 5) {
+      articles(first: 20) {
         title
+        publishedDate
+        publishedAt
       }
     }
   `
@@ -26,12 +29,20 @@ async function getDynamicTickerHeadlines() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
-      cache: 'no-store',
-      next: { revalidate: 0 }
+      cache: 'no-store'
     })
     const json = await res.json()
+    
     if (json.data?.articles && json.data.articles.length > 0) {
-      const titles = json.data.articles.map((a: any) => a.title).join(' • ')
+      let articles = json.data.articles;
+      articles.sort((a: any, b: any) => {
+        const dateA = new Date(a.publishedDate || a.publishedAt || 0).getTime();
+        const dateB = new Date(b.publishedDate || b.publishedAt || 0).getTime();
+        return dateB - dateA;
+      });
+
+      const top5 = articles.slice(0, 5);
+      const titles = top5.map((a: any) => a.title).join(' • ')
       return titles + ' • GEOTREXX brings you the truth first.'
     }
   } catch (error) {
@@ -85,12 +96,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
             <div>
               <h4 className="font-bold uppercase tracking-wider mb-6 text-[#C8102E]">Sections</h4>
-              <ul className="space-y-3 text-gray-400 text-sm font-medium">
+              <ul className="space-y-3 text-gray-400 text-sm font-medium mb-10">
                 <li><Link href="/category/world" className="hover:text-white hover:translate-x-1 transition-all inline-block">World News</Link></li>
                 <li><Link href="/category/business" className="hover:text-white hover:translate-x-1 transition-all inline-block">Markets</Link></li>
                 <li><Link href="/category/technology" className="hover:text-white hover:translate-x-1 transition-all inline-block">Tech</Link></li>
-                {/* 🚀 Moved Network Founders here for high visibility! */}
-                <li><Link href="/creator" className="hover:text-white hover:translate-x-1 transition-all inline-block font-bold text-gray-300">Network Founders</Link></li>
+              </ul>
+
+              {/* 🚀 DEDICATED ABOUT US BLOCK */}
+              <h4 className="font-bold uppercase tracking-wider mb-6 text-[#C8102E]">About Us</h4>
+              <ul className="space-y-3 text-gray-400 text-sm font-medium">
+                <li>
+                  <Link href="/creator" className="hover:text-[#C8102E] hover:translate-x-1 transition-all inline-flex items-center gap-2 font-bold text-white group">
+                    <svg className="w-4 h-4 text-[#C8102E] group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Network Founders
+                  </Link>
+                </li>
               </ul>
             </div>
 
