@@ -8,7 +8,6 @@ export const metadata = {
   description: 'Premium digital destination for global news, sports analytics, and deep editorial coverage.',
 }
 
-// 🚀 MAXIMUM CACHE OVERRIDE
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 
@@ -25,9 +24,14 @@ async function getDynamicTickerHeadlines() {
     }
   `
   try {
-    const res = await fetch(HYGRAPH_ENDPOINT, {
+    // 🚀 NUCLEAR CACHE BUSTER
+    const res = await fetch(`${HYGRAPH_ENDPOINT}?burst=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      },
       body: JSON.stringify({ query }),
       cache: 'no-store'
     })

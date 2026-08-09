@@ -2,7 +2,6 @@ import NewsCard from '../components/NewsCard'
 import Image from 'next/image'
 import Link from 'next/link'
 
-// 🚀 MAXIMUM CACHE OVERRIDE
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -10,7 +9,6 @@ export const fetchCache = 'force-no-store';
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 const getLatestArticles = async () => {
-  // We request MORE articles so we have a large pool to manually sort
   const query = `
     query GetArticles {
       articles(first: 30) {
@@ -26,9 +24,14 @@ const getLatestArticles = async () => {
     }
   `
   try {
-    const res = await fetch(HYGRAPH_ENDPOINT, {
+    // 🚀 NUCLEAR CACHE BUSTER: Forces Hygraph to ignore its CDN and pull live data
+    const res = await fetch(`${HYGRAPH_ENDPOINT}?burst=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      },
       body: JSON.stringify({ query }),
       cache: 'no-store'
     })
@@ -38,13 +41,11 @@ const getLatestArticles = async () => {
     
     let articles = json.data?.articles || [];
     
-    // 🚀 BULLETPROOF FRONTEND SORTING
-    // We sort the array manually using JavaScript Date logic to guarantee the newest is #1
+    // Sorts newest to oldest manually
     articles.sort((a: any, b: any) => {
-      // Use publishedDate if available, fallback to publishedAt
       const dateA = new Date(a.publishedDate || a.publishedAt || 0).getTime();
       const dateB = new Date(b.publishedDate || b.publishedAt || 0).getTime();
-      return dateB - dateA; // Descending order (newest first)
+      return dateB - dateA;
     });
 
     return { data: articles.slice(0, 16), error: null }
@@ -81,7 +82,6 @@ export default async function Home() {
     )
   }
 
-  // The Waterfall Layout Logic
   const heroArticle = articles[0]
   const sideArticles = articles.slice(1, 4)
   const gridArticles = articles.slice(4)
@@ -90,7 +90,7 @@ export default async function Home() {
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col lg:flex-row gap-8 mb-16">
         
-        {/* Massive Hero Story */}
+        {/* Hero Story */}
         <Link href={`/news/${heroArticle.slug}`} className="lg:w-2/3 group relative block overflow-hidden rounded-2xl shadow-xl bg-gray-900">
           <div className="relative h-[400px] md:h-[550px] w-full">
             <Image 
