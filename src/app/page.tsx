@@ -9,9 +9,10 @@ export const fetchCache = 'force-no-store';
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 const getLatestArticles = async () => {
+  // 🚀 Added 'orderBy: publishedAt_DESC' so Hygraph actually sends the NEWEST 30 posts to be sorted!
   const query = `
     query GetArticles {
-      articles(first: 30) {
+      articles(first: 30, orderBy: publishedAt_DESC) {
         id
         title
         slug
@@ -24,7 +25,6 @@ const getLatestArticles = async () => {
     }
   `
   try {
-    // 🚀 NUCLEAR CACHE BUSTER: Forces Hygraph to ignore its CDN and pull live data
     const res = await fetch(`${HYGRAPH_ENDPOINT}?burst=${Date.now()}`, {
       method: 'POST',
       headers: { 
@@ -41,7 +41,7 @@ const getLatestArticles = async () => {
     
     let articles = json.data?.articles || [];
     
-    // Sorts newest to oldest manually
+    // Now we sort the pool of the 30 absolute newest articles by your custom date
     articles.sort((a: any, b: any) => {
       const dateA = new Date(a.publishedDate || a.publishedAt || 0).getTime();
       const dateB = new Date(b.publishedDate || b.publishedAt || 0).getTime();
