@@ -8,15 +8,15 @@ export const metadata = {
   description: 'Premium digital destination for global news, sports analytics, and deep editorial coverage.',
 }
 
-export const revalidate = 0; // Force layout to stay fresh
+export const revalidate = 0; 
 
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
-// 🚀 Dynamically fetches the 5 latest news titles for the scrolling ticker
 async function getDynamicTickerHeadlines() {
+  // 🚀 Restored sorting to your custom 'publishedDate' field here too!
   const query = `
     query GetHeadlines {
-      articles(orderBy: publishedAt_DESC, first: 5) {
+      articles(orderBy: publishedDate_DESC, first: 5) {
         title
       }
     }
@@ -26,11 +26,11 @@ async function getDynamicTickerHeadlines() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
+      cache: 'no-store',
       next: { revalidate: 0 }
     })
     const json = await res.json()
     if (json.data?.articles && json.data.articles.length > 0) {
-      // Connects the titles with bullets
       const titles = json.data.articles.map((a: any) => a.title).join(' • ')
       return titles + ' • GEOTREXX brings you the truth first.'
     }
@@ -41,7 +41,6 @@ async function getDynamicTickerHeadlines() {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Get live titles, or use a default if Hygraph fails
   const tickerText = await getDynamicTickerHeadlines() || "Global Markets see unprecedented shifts • Major political summit concludes in Accra • GEOTREXX brings you the truth first."
 
   return (
@@ -51,7 +50,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="flex flex-col min-h-screen bg-[#f9fafb] dark:bg-[#0a0b10] text-gray-900 dark:text-white selection:bg-[#C8102E] selection:text-white transition-colors duration-300">
         
-        {/* Pass the live ticker text into the navigation component */}
         <SiteNavigation tickerText={tickerText} />
 
         <main className="flex-grow w-full max-w-[1400px] mx-auto">
@@ -91,6 +89,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <li><Link href="/category/world" className="hover:text-white hover:translate-x-1 transition-all inline-block">World News</Link></li>
                 <li><Link href="/category/business" className="hover:text-white hover:translate-x-1 transition-all inline-block">Markets</Link></li>
                 <li><Link href="/category/technology" className="hover:text-white hover:translate-x-1 transition-all inline-block">Tech</Link></li>
+                {/* 🚀 Moved Network Founders here for high visibility! */}
+                <li><Link href="/creator" className="hover:text-white hover:translate-x-1 transition-all inline-block font-bold text-gray-300">Network Founders</Link></li>
               </ul>
             </div>
 
@@ -119,7 +119,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <div className="max-w-[1400px] mx-auto px-6 border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
             <p>Copyright © {new Date().getFullYear()} GEOTREXX Media Group. All Rights Reserved.</p>
             <div className="flex gap-4 mt-4 md:mt-0">
-              <Link href="/creator" className="hover:text-white transition-colors font-medium">Network Founders</Link>
               <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
               <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
             </div>

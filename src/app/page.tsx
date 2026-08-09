@@ -10,10 +10,10 @@ export const fetchCache = 'force-no-store';
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 const getLatestArticles = async () => {
-  // 🚀 Increased from 7 to 16 so the grid actually fills up with up to 12 stories!
+  // 🚀 Restored sorting to your custom 'publishedDate' field!
   const query = `
     query GetArticles {
-      articles(orderBy: publishedAt_DESC, first: 16) {
+      articles(orderBy: publishedDate_DESC, first: 16) {
         id
         title
         slug
@@ -30,7 +30,7 @@ const getLatestArticles = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
-      cache: 'no-store', // 🚀 Forces real-time database fetch
+      cache: 'no-store',
       next: { revalidate: 0 } 
     })
     
@@ -71,9 +71,9 @@ export default async function Home() {
   }
 
   // The Waterfall Layout Logic
-  const heroArticle = articles[0] // #1 Newest
-  const sideArticles = articles.slice(1, 4) // #2, #3, #4
-  const gridArticles = articles.slice(4) // #5 through #16
+  const heroArticle = articles[0]
+  const sideArticles = articles.slice(1, 4)
+  const gridArticles = articles.slice(4)
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
