@@ -2,17 +2,18 @@ import NewsCard from '../components/NewsCard'
 import Image from 'next/image'
 import Link from 'next/link'
 
-// 🚀 FORCES NEXT.JS TO NEVER CACHE THIS PAGE
+// 🚀 TRIPLE-LAYER CACHE KILL SWITCH FOR NEXT.JS
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 const getLatestArticles = async () => {
-  // Sorts by the system published time so the absolute newest is ALWAYS first
+  // 🚀 Increased from 7 to 16 so the grid actually fills up with up to 12 stories!
   const query = `
     query GetArticles {
-      articles(orderBy: publishedAt_DESC, first: 7) {
+      articles(orderBy: publishedAt_DESC, first: 16) {
         id
         title
         slug
@@ -29,7 +30,8 @@ const getLatestArticles = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
-      next: { revalidate: 0 } // Double-layer cache bypass
+      cache: 'no-store', // 🚀 Forces real-time database fetch
+      next: { revalidate: 0 } 
     })
     
     const json = await res.json()
@@ -68,9 +70,10 @@ export default async function Home() {
     )
   }
 
-  const heroArticle = articles[0]
-  const sideArticles = articles.slice(1, 4)
-  const gridArticles = articles.slice(4)
+  // The Waterfall Layout Logic
+  const heroArticle = articles[0] // #1 Newest
+  const sideArticles = articles.slice(1, 4) // #2, #3, #4
+  const gridArticles = articles.slice(4) // #5 through #16
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
