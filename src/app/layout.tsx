@@ -16,7 +16,7 @@ const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00m
 async function getDynamicTickerHeadlines() {
   const query = `
     query GetHeadlines {
-      articles(first: 20) {
+      articles(first: 50, orderBy: publishedAt_DESC) {
         title
         publishedDate
         publishedAt
@@ -24,14 +24,9 @@ async function getDynamicTickerHeadlines() {
     }
   `
   try {
-    // 🚀 NUCLEAR CACHE BUSTER
-    const res = await fetch(`${HYGRAPH_ENDPOINT}?burst=${Date.now()}`, {
+    const res = await fetch(`${HYGRAPH_ENDPOINT}?v=${Date.now()}`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
       cache: 'no-store'
     })
@@ -39,9 +34,11 @@ async function getDynamicTickerHeadlines() {
     
     if (json.data?.articles && json.data.articles.length > 0) {
       let articles = json.data.articles;
+      
+      // Manual JavaScript sort
       articles.sort((a: any, b: any) => {
-        const dateA = new Date(a.publishedDate || a.publishedAt || 0).getTime();
-        const dateB = new Date(b.publishedDate || b.publishedAt || 0).getTime();
+        const dateA = new Date(a.publishedDate || a.publishedAt).getTime();
+        const dateB = new Date(b.publishedDate || b.publishedAt).getTime();
         return dateB - dateA;
       });
 
@@ -106,7 +103,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <li><Link href="/category/technology" className="hover:text-white hover:translate-x-1 transition-all inline-block">Tech</Link></li>
               </ul>
 
-              {/* 🚀 DEDICATED ABOUT US BLOCK */}
               <h4 className="font-bold uppercase tracking-wider mb-6 text-[#C8102E]">About Us</h4>
               <ul className="space-y-3 text-gray-400 text-sm font-medium">
                 <li>

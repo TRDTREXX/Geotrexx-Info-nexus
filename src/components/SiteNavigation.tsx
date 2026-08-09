@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import ThemeToggle from './ThemeToggle'
 
-// Accept the dynamic ticker string as a prop
-export default function SiteNavigation({ tickerText = "Breaking News • GEOTREXX brings you the truth first." }: { tickerText?: string }) {
+export default function SiteNavigation({ tickerText = "GEOTREXX brings you the truth first." }: { tickerText?: string }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
@@ -13,17 +12,20 @@ export default function SiteNavigation({ tickerText = "Breaking News • GEOTREX
   }, [isSidebarOpen])
 
   const tabs = ['Politics', 'Business', 'Sports', 'Technology', 'Entertainment', 'World', 'Opinion']
+  
+  // Provide a safe fallback if tickerText is somehow empty
+  const safeTickerText = tickerText || "GEOTREXX brings you the truth first."
 
   return (
     <>
       <style>{`
         @keyframes ticker {
-          0% { transform: translateX(100vw); }
-          100% { transform: translateX(-100%); }
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-33.333%); }
         }
         .animate-ticker {
-          display: inline-block;
-          white-space: nowrap;
+          display: flex;
+          width: max-content;
           animation: ticker 40s linear infinite;
         }
         .ticker-container:hover .animate-ticker {
@@ -31,7 +33,6 @@ export default function SiteNavigation({ tickerText = "Breaking News • GEOTREX
         }
       `}</style>
 
-      {/* Sidebar */}
       {isSidebarOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]" onClick={() => setSidebarOpen(false)} />}
       <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-[#0a0b10] z-[90] transform transition-transform duration-300 border-r border-gray-200 dark:border-gray-800 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
@@ -60,12 +61,16 @@ export default function SiteNavigation({ tickerText = "Breaking News • GEOTREX
           </span>
           <span className="uppercase text-[#C8102E]">Breaking</span>
         </div>
-        <div className="flex-1 overflow-hidden relative">
-          {/* 🚀 Injects the live database text here */}
+        
+        {/* 🚀 FIXED TICKER: Instantly visible and loops perfectly with no gaps */}
+        <div className="flex-1 overflow-hidden relative flex items-center">
           <div className="animate-ticker text-white/90 uppercase">
-            {tickerText}
+            <span className="pr-12">{safeTickerText}</span>
+            <span className="pr-12">{safeTickerText}</span>
+            <span className="pr-12">{safeTickerText}</span>
           </div>
         </div>
+        
         <div className="hidden md:flex gap-6 text-white/80 ml-4 flex-shrink-0 z-10 bg-black pl-2 border-l border-gray-800">
           <Link href="/login" className="hover:text-[#C8102E] transition-colors">SIGN IN</Link>
           <Link href="/subscribe" className="hover:text-[#C8102E] transition-colors">SUBSCRIBE</Link>
