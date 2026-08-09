@@ -16,34 +16,27 @@ const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00m
 async function getDynamicTickerHeadlines() {
   const query = `
     query GetHeadlines {
-      articles(first: 50, orderBy: publishedAt_DESC) {
+      articles(first: 5, orderBy: publishedAt_DESC) {
         title
-        publishedDate
-        publishedAt
       }
     }
   `
   try {
-    const res = await fetch(`${HYGRAPH_ENDPOINT}?v=${Date.now()}`, {
+    const res = await fetch(`${HYGRAPH_ENDPOINT}?burst=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      },
       body: JSON.stringify({ query }),
       cache: 'no-store'
     })
     const json = await res.json()
     
+    // 🚀 Stripped out buggy JS sorting. We trust the 5 that Hygraph gave us.
     if (json.data?.articles && json.data.articles.length > 0) {
-      let articles = json.data.articles;
-      
-      // Manual JavaScript sort
-      articles.sort((a: any, b: any) => {
-        const dateA = new Date(a.publishedDate || a.publishedAt).getTime();
-        const dateB = new Date(b.publishedDate || b.publishedAt).getTime();
-        return dateB - dateA;
-      });
-
-      const top5 = articles.slice(0, 5);
-      const titles = top5.map((a: any) => a.title).join(' • ')
+      const titles = json.data.articles.map((a: any) => a.title).join(' • ')
       return titles + ' • GEOTREXX brings you the truth first.'
     }
   } catch (error) {

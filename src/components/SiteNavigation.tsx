@@ -13,7 +13,6 @@ export default function SiteNavigation({ tickerText = "GEOTREXX brings you the t
 
   const tabs = ['Politics', 'Business', 'Sports', 'Technology', 'Entertainment', 'World', 'Opinion']
   
-  // Provide a safe fallback if tickerText is somehow empty
   const safeTickerText = tickerText || "GEOTREXX brings you the truth first."
 
   return (
@@ -24,8 +23,8 @@ export default function SiteNavigation({ tickerText = "GEOTREXX brings you the t
           100% { transform: translateX(-33.333%); }
         }
         .animate-ticker {
-          display: flex;
-          width: max-content;
+          display: inline-block;
+          white-space: nowrap; /* 🚀 FORCES A SINGLE LINE */
           animation: ticker 40s linear infinite;
         }
         .ticker-container:hover .animate-ticker {
@@ -62,12 +61,12 @@ export default function SiteNavigation({ tickerText = "GEOTREXX brings you the t
           <span className="uppercase text-[#C8102E]">Breaking</span>
         </div>
         
-        {/* 🚀 FIXED TICKER: Instantly visible and loops perfectly with no gaps */}
-        <div className="flex-1 overflow-hidden relative flex items-center">
+        {/* 🚀 SINGLE LINE SCROLL CONTAINER */}
+        <div className="flex-1 overflow-hidden relative">
           <div className="animate-ticker text-white/90 uppercase">
-            <span className="pr-12">{safeTickerText}</span>
-            <span className="pr-12">{safeTickerText}</span>
-            <span className="pr-12">{safeTickerText}</span>
+            <span className="pr-12 inline-block">{safeTickerText}</span>
+            <span className="pr-12 inline-block">{safeTickerText}</span>
+            <span className="pr-12 inline-block">{safeTickerText}</span>
           </div>
         </div>
         

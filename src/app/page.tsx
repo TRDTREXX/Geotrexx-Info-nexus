@@ -9,10 +9,10 @@ export const fetchCache = 'force-no-store';
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 const getLatestArticles = async () => {
-  // 🚀 Fetch 100 articles to guarantee newer ones aren't left behind by Hygraph
+  // 🚀 Trust the database to sort perfectly, grabbing only the 16 absolute newest.
   const query = `
     query GetArticles {
-      articles(first: 100, orderBy: publishedAt_DESC) {
+      articles(first: 16, orderBy: publishedAt_DESC) {
         id
         title
         slug
@@ -25,9 +25,13 @@ const getLatestArticles = async () => {
     }
   `
   try {
-    const res = await fetch(`${HYGRAPH_ENDPOINT}?v=${Date.now()}`, {
+    const res = await fetch(`${HYGRAPH_ENDPOINT}?burst=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      },
       body: JSON.stringify({ query }),
       cache: 'no-store'
     })
@@ -35,16 +39,8 @@ const getLatestArticles = async () => {
     const json = await res.json()
     if (json.errors) return { data: null, error: json.errors[0].message }
     
-    let articles = json.data?.articles || [];
-    
-    // 🚀 Strict manual sorting using your custom publishedDate
-    articles.sort((a: any, b: any) => {
-      const dateA = new Date(a.publishedDate || a.publishedAt).getTime();
-      const dateB = new Date(b.publishedDate || b.publishedAt).getTime();
-      return dateB - dateA; // Highest timestamp (newest date) goes to the top
-    });
-
-    return { data: articles.slice(0, 16), error: null }
+    // 🚀 Stripped out the buggy JavaScript sorting completely. 
+    return { data: json.data?.articles || [], error: null }
   } catch (error: any) {
     return { data: null, error: error.message }
   }
