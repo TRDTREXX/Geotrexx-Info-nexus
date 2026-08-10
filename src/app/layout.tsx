@@ -14,11 +14,12 @@ export const dynamic = 'force-dynamic';
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 async function getDynamicTickerHeadlines() {
-  // 🚀 FIXED: Now strictly sorts by YOUR custom calendar date
   const query = `
     query GetHeadlines {
-      articles(first: 5, orderBy: publishedDate_DESC) {
+      articles(first: 20, orderBy: publishedAt_DESC) {
         title
+        publishedDate
+        publishedAt
       }
     }
   `
@@ -36,7 +37,25 @@ async function getDynamicTickerHeadlines() {
     const json = await res.json()
     
     if (json.data?.articles && json.data.articles.length > 0) {
-      const titles = json.data.articles.map((a: any) => a.title).join(' • ')
+      let articles = json.data.articles;
+      
+      // 🚀 THE INDESTRUCTIBLE SORTING ENGINE
+      articles.sort((a: any, b: any) => {
+        let timeA = 0;
+        if (a.publishedDate) timeA = new Date(a.publishedDate).getTime();
+        else if (a.publishedAt) timeA = new Date(a.publishedAt).getTime();
+        if (isNaN(timeA)) timeA = 0;
+
+        let timeB = 0;
+        if (b.publishedDate) timeB = new Date(b.publishedDate).getTime();
+        else if (b.publishedAt) timeB = new Date(b.publishedAt).getTime();
+        if (isNaN(timeB)) timeB = 0;
+
+        return timeB - timeA;
+      });
+
+      const top5 = articles.slice(0, 5);
+      const titles = top5.map((a: any) => a.title).join(' • ')
       return titles + ' • GEOTREXX brings you the truth first.'
     }
   } catch (error) {

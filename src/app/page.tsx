@@ -9,10 +9,10 @@ export const fetchCache = 'force-no-store';
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 const getLatestArticles = async () => {
-  // 🚀 FIXED: Now strictly sorts by YOUR custom calendar date, not the system's "Publish" button click
+  // Fetch a large pool of the most recently published items
   const query = `
     query GetArticles {
-      articles(first: 16, orderBy: publishedDate_DESC) {
+      articles(first: 50, orderBy: publishedAt_DESC) {
         id
         title
         slug
@@ -39,7 +39,26 @@ const getLatestArticles = async () => {
     const json = await res.json()
     if (json.errors) return { data: null, error: json.errors[0].message }
     
-    return { data: json.data?.articles || [], error: null }
+    let articles = json.data?.articles || [];
+    
+    // 🚀 THE INDESTRUCTIBLE SORTING ENGINE
+    articles.sort((a: any, b: any) => {
+      // Safely parse Date A (Prefers your custom date, falls back to system date)
+      let timeA = 0;
+      if (a.publishedDate) timeA = new Date(a.publishedDate).getTime();
+      else if (a.publishedAt) timeA = new Date(a.publishedAt).getTime();
+      if (isNaN(timeA)) timeA = 0; // Prevents the sorting from crashing
+
+      // Safely parse Date B
+      let timeB = 0;
+      if (b.publishedDate) timeB = new Date(b.publishedDate).getTime();
+      else if (b.publishedAt) timeB = new Date(b.publishedAt).getTime();
+      if (isNaN(timeB)) timeB = 0;
+
+      return timeB - timeA; // Descending (Newest exactly at the top)
+    });
+
+    return { data: articles.slice(0, 16), error: null }
   } catch (error: any) {
     return { data: null, error: error.message }
   }
