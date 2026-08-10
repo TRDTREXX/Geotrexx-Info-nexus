@@ -4,7 +4,6 @@ import type { Metadata } from 'next'
 import ReadingProgressBar from '../../../components/ReadingProgressBar'
 import SmartImage from '../../../components/SmartImage'
 
-// 🚀 CACHE KILL SWITCHES: Forces Next.js to stop showing the saved error page
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -13,9 +12,11 @@ const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00m
 
 async function getArticle(rawSlug: string) {
   const slug = decodeURIComponent(rawSlug)
+  
+  // 🚀 Changed from 'articles' (list) to 'article' (singular) for strict Unique matching
   const query = `
     query GetArticle($slug: String!) {
-      articles(where: { slug: $slug }, first: 1) {
+      article(where: { slug: $slug }) {
         id
         title
         slug
@@ -29,7 +30,6 @@ async function getArticle(rawSlug: string) {
     }
   `
   try {
-    // 🚀 Added URL timestamp to bypass Hygraph's CDN cache as well
     const res = await fetch(`${HYGRAPH_ENDPOINT}?v=${Date.now()}`, {
       method: 'POST',
       headers: { 
@@ -47,7 +47,8 @@ async function getArticle(rawSlug: string) {
     const json = await res.json()
     if (json.errors) return { article: null, error: json.errors[0].message }
     
-    const foundArticle = json.data?.articles?.[0] || null
+    // 🚀 Updated JSON parsing to match the singular 'article' query
+    const foundArticle = json.data?.article || null
     return { article: foundArticle, error: null }
   } catch (error: any) {
     return { article: null, error: error.message }
@@ -80,10 +81,17 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
   if (error || !article) {
     return (
       <div className="w-full py-32 flex flex-col items-center justify-center text-center px-4 min-h-[60vh]">
-        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-2xl p-8 max-w-2xl">
+        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-2xl p-8 max-w-2xl w-full">
           <h2 className="text-2xl font-black text-red-600 dark:text-red-400 mb-4 uppercase tracking-widest">Article Render Error</h2>
-          <p className="text-gray-700 dark:text-gray-300 font-mono text-sm break-words">{error || "Article not found in database."}</p>
-          <Link href="/" className="mt-8 inline-block text-[#C8102E] font-bold uppercase hover:underline">Return Home</Link>
+          <p className="text-gray-700 dark:text-gray-300 font-mono text-sm break-words mb-6">{error || "Article not found in database."}</p>
+          
+          {/* 🚀 DEBUG BOX: Shows exactly what the website is looking for */}
+          <div className="bg-white dark:bg-black p-4 rounded-lg text-left w-full mb-8 shadow-inner border border-red-100 dark:border-red-900/50">
+            <p className="text-xs text-gray-500 font-bold uppercase mb-1">The website is searching Hygraph for this exact slug:</p>
+            <code className="text-[#C8102E] break-all font-mono text-sm">{decodeURIComponent(params.slug)}</code>
+          </div>
+
+          <Link href="/" className="inline-block text-[#C8102E] font-bold uppercase hover:underline">Return Home</Link>
         </div>
       </div>
     )
