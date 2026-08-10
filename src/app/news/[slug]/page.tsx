@@ -4,6 +4,11 @@ import type { Metadata } from 'next'
 import ReadingProgressBar from '../../../components/ReadingProgressBar'
 import SmartImage from '../../../components/SmartImage'
 
+// 🚀 CACHE KILL SWITCHES: Forces Next.js to stop showing the saved error page
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 async function getArticle(rawSlug: string) {
@@ -24,10 +29,18 @@ async function getArticle(rawSlug: string) {
     }
   `
   try {
-    const res = await fetch(HYGRAPH_ENDPOINT, {
+    // 🚀 Added URL timestamp to bypass Hygraph's CDN cache as well
+    const res = await fetch(`${HYGRAPH_ENDPOINT}?v=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      },
+      body: JSON.stringify({ 
+        query, 
+        variables: { slug } 
+      }),
       cache: 'no-store'
     })
     
@@ -80,7 +93,6 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
   const readingTime = Math.max(1, Math.ceil(wordCount / 200))
   const displayCategory = (!article.category || article.category.toLowerCase() === 'general news') ? 'World' : article.category;
 
-  // Let's display the beautiful custom date!
   let formattedDate = article.publishedDate || 'Recent';
 
   return (
