@@ -9,10 +9,10 @@ export const fetchCache = 'force-no-store';
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 const getLatestArticles = async () => {
-  // 🚀 Trust the database to sort perfectly, grabbing only the 16 absolute newest.
+  // 🚀 FIXED: Now strictly sorts by YOUR custom calendar date, not the system's "Publish" button click
   const query = `
     query GetArticles {
-      articles(first: 16, orderBy: publishedAt_DESC) {
+      articles(first: 16, orderBy: publishedDate_DESC) {
         id
         title
         slug
@@ -39,7 +39,6 @@ const getLatestArticles = async () => {
     const json = await res.json()
     if (json.errors) return { data: null, error: json.errors[0].message }
     
-    // 🚀 Stripped out the buggy JavaScript sorting completely. 
     return { data: json.data?.articles || [], error: null }
   } catch (error: any) {
     return { data: null, error: error.message }

@@ -14,9 +14,10 @@ export const dynamic = 'force-dynamic';
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
 async function getDynamicTickerHeadlines() {
+  // 🚀 FIXED: Now strictly sorts by YOUR custom calendar date
   const query = `
     query GetHeadlines {
-      articles(first: 5, orderBy: publishedAt_DESC) {
+      articles(first: 5, orderBy: publishedDate_DESC) {
         title
       }
     }
@@ -34,7 +35,6 @@ async function getDynamicTickerHeadlines() {
     })
     const json = await res.json()
     
-    // 🚀 Stripped out buggy JS sorting. We trust the 5 that Hygraph gave us.
     if (json.data?.articles && json.data.articles.length > 0) {
       const titles = json.data.articles.map((a: any) => a.title).join(' • ')
       return titles + ' • GEOTREXX brings you the truth first.'
