@@ -13,6 +13,21 @@ export const dynamic = 'force-dynamic';
 
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
+const getSortTime = (article: any) => {
+  let time = 0;
+  if (article.publishedDate) {
+    if (article.publishedDate.includes('/')) {
+      const [d, m, y] = article.publishedDate.split('/');
+      time = new Date(`${y}-${m}-${d}T12:00:00`).getTime();
+    } else {
+      time = new Date(article.publishedDate).getTime();
+    }
+  } else if (article.publishedAt) {
+    time = new Date(article.publishedAt).getTime();
+  }
+  return isNaN(time) ? 0 : time;
+}
+
 async function getDynamicTickerHeadlines() {
   const query = `
     query GetHeadlines {
@@ -24,13 +39,9 @@ async function getDynamicTickerHeadlines() {
     }
   `
   try {
-    const res = await fetch(`${HYGRAPH_ENDPOINT}?burst=${Date.now()}`, {
+    const res = await fetch(HYGRAPH_ENDPOINT, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
       cache: 'no-store'
     })
@@ -38,24 +49,9 @@ async function getDynamicTickerHeadlines() {
     
     if (json.data?.articles && json.data.articles.length > 0) {
       let articles = json.data.articles;
+      articles.sort((a: any, b: any) => getSortTime(b) - getSortTime(a));
       
-      // 🚀 THE INDESTRUCTIBLE SORTING ENGINE
-      articles.sort((a: any, b: any) => {
-        let timeA = 0;
-        if (a.publishedDate) timeA = new Date(a.publishedDate).getTime();
-        else if (a.publishedAt) timeA = new Date(a.publishedAt).getTime();
-        if (isNaN(timeA)) timeA = 0;
-
-        let timeB = 0;
-        if (b.publishedDate) timeB = new Date(b.publishedDate).getTime();
-        else if (b.publishedAt) timeB = new Date(b.publishedAt).getTime();
-        if (isNaN(timeB)) timeB = 0;
-
-        return timeB - timeA;
-      });
-
-      const top5 = articles.slice(0, 5);
-      const titles = top5.map((a: any) => a.title).join(' • ')
+      const titles = articles.slice(0, 5).map((a: any) => a.title).join(' • ')
       return titles + ' • GEOTREXX brings you the truth first.'
     }
   } catch (error) {
@@ -96,15 +92,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <p className="flex items-center gap-3"><span className="text-[#C8102E]">✉️</span> info@geotrexx.com</p>
                 <p className="flex items-center gap-3"><span className="text-[#C8102E]">📞</span> +233 53 553 1860</p>
               </div>
-
-              <div className="flex gap-4">
-                <a href="https://www.facebook.com/Granite.WebGad" target="_blank" rel="noopener noreferrer" aria-label="Facebook Personal" className="h-10 w-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-[#C8102E] hover:text-white transition-colors text-gray-400">
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/></svg>
-                </a>
-                <a href="https://www.facebook.com/Geotrexx1" target="_blank" rel="noopener noreferrer" aria-label="GEOTREXX Facebook Page" className="h-10 w-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-[#C8102E] hover:text-white transition-colors text-gray-400">
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M14 13.5h2.5l1-4H14v-2c0-1.03 0-2 2-2h1.5V2.14c-.326-.043-1.557-.14-2.857-.14-3.442 0-5.328 2.204-5.328 5.76V9.5H7v4h2.315v10.5h4.685V13.5z"/></svg>
-                </a>
-              </div>
             </div>
 
             <div>
@@ -129,31 +116,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div>
               <h4 className="font-bold uppercase tracking-wider mb-6 text-[#C8102E]">Portal</h4>
               <ul className="space-y-3 text-gray-400 text-sm font-medium">
-                <li>
-                  <Link href="/search" className="hover:text-white transition-colors flex items-center gap-2 group">
-                    <svg className="w-4 h-4 group-hover:text-[#C8102E] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg> Search News
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/login" className="hover:text-white transition-colors flex items-center gap-2 group">
-                    <svg className="w-4 h-4 group-hover:text-[#C8102E] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg> Member Login
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/subscribe" className="hover:text-white transition-colors flex items-center gap-2 group">
-                    <svg className="w-4 h-4 group-hover:text-[#C8102E] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg> Subscribe
-                  </Link>
-                </li>
+                <li><Link href="/search" className="hover:text-white transition-colors">Search News</Link></li>
+                <li><Link href="/login" className="hover:text-white transition-colors">Member Login</Link></li>
+                <li><Link href="/subscribe" className="hover:text-white transition-colors">Subscribe</Link></li>
               </ul>
             </div>
           </div>
           
           <div className="max-w-[1400px] mx-auto px-6 border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
             <p>Copyright © {new Date().getFullYear()} GEOTREXX Media Group. All Rights Reserved.</p>
-            <div className="flex gap-4 mt-4 md:mt-0">
-              <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-              <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
-            </div>
           </div>
         </footer>
       </body>

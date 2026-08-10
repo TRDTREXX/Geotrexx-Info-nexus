@@ -4,14 +4,30 @@ import Link from 'next/link'
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
 
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
+// 🚀 The exact translator to stop "30" from beating "09"
+const getSortTime = (article: any) => {
+  let time = 0;
+  if (article.publishedDate) {
+    if (article.publishedDate.includes('/')) {
+      const [d, m, y] = article.publishedDate.split('/');
+      time = new Date(`${y}-${m}-${d}T12:00:00`).getTime();
+    } else {
+      time = new Date(article.publishedDate).getTime();
+    }
+  } else if (article.publishedAt) {
+    time = new Date(article.publishedAt).getTime();
+  }
+  return isNaN(time) ? 0 : time;
+}
+
 const getLatestArticles = async () => {
+  // 🚀 Restored publishedDate to the query
   const query = `
     query GetArticles {
-      articles(first: 100, orderBy: publishedAt_DESC) {
+      articles(first: 50, orderBy: publishedAt_DESC) {
         id
         title
         slug
@@ -24,13 +40,9 @@ const getLatestArticles = async () => {
     }
   `
   try {
-    const res = await fetch(`${HYGRAPH_ENDPOINT}?burst=${Date.now()}`, {
+    const res = await fetch(HYGRAPH_ENDPOINT, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
       cache: 'no-store'
     })
@@ -40,16 +52,10 @@ const getLatestArticles = async () => {
     
     let articles = json.data?.articles || [];
     
-    // 🚀 Indestructible Sorting: Fallback to system date if custom date is blank
-    articles.sort((a: any, b: any) => {
-      let timeA = new Date(a.publishedDate || a.publishedAt || 0).getTime();
-      let timeB = new Date(b.publishedDate || b.publishedAt || 0).getTime();
-      if (isNaN(timeA)) timeA = 0;
-      if (isNaN(timeB)) timeB = 0;
-      return timeB - timeA; // Newest exactly at the top
-    });
+    // Sort properly using our translator
+    articles.sort((a: any, b: any) => getSortTime(b) - getSortTime(a));
 
-    return { data: articles, error: null }
+    return { data: articles.slice(0, 16), error: null }
   } catch (error: any) {
     return { data: null, error: error.message }
   }
@@ -68,24 +74,19 @@ export default async function Home() {
     return (
       <div className="w-full py-32 flex flex-col items-center justify-center text-center px-4">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">No Stories Available</h2>
+        <p className="text-gray-500 max-w-md mx-auto">{error || "Please check your database connection."}</p>
       </div>
     )
   }
 
-  // 🚀 FIXED CHRONOLOGICAL FLOW
-  // Main Feed is strictly Articles #1 through #9
   const heroArticle = articles[0]
   const gridArticles = articles.slice(1, 9) 
-  // Sidebar gets older Trending items (#10 through #14)
   const sideArticles = articles.slice(9, 14)
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row gap-8">
       
-      {/* 🚀 MAIN CHRONOLOGICAL COLUMN: Hero -> Grid */}
       <div className="w-full lg:w-2/3 flex flex-col gap-10">
-        
-        {/* Massive Hero Story */}
         <Link href={`/news/${heroArticle.slug}`} className="group relative block overflow-hidden rounded-2xl shadow-xl bg-gray-900">
           <div className="relative h-[400px] md:h-[550px] w-full">
             <Image 
@@ -110,7 +111,6 @@ export default async function Home() {
           </div>
         </Link>
 
-        {/* Latest Updates Grid (Follows Hero perfectly) */}
         {gridArticles.length > 0 && (
           <div className="border-t border-gray-200 dark:border-gray-800 pt-8">
             <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-widest mb-8">Latest Updates</h2>
@@ -123,7 +123,7 @@ export default async function Home() {
                   excerpt={article.summary || "Click to read the full story and dive deep into the analysis."}
                   imageUrl={article.image?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80"}
                   category={getDisplayCategory(article.category)}
-                  date={article.publishedDate || article.publishedAt}
+                  date={article.publishedDate || article.publishedAt} 
                 />
               ))}
             </div>
@@ -131,7 +131,6 @@ export default async function Home() {
         )}
       </div>
 
-      {/* 🚀 SIDEBAR COLUMN (Pushed to Right on Laptop, Bottom on Mobile) */}
       <div className="w-full lg:w-1/3 flex flex-col gap-6 bg-white dark:bg-[#1a1b23] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm h-fit">
         <h2 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-widest border-b-2 border-[#C8102E] pb-2 inline-block">Trending Now</h2>
         <div className="flex flex-col gap-6 mt-2">
