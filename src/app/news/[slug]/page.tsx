@@ -11,12 +11,13 @@ const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00m
 
 async function getArticle(rawSlug: string) {
   if (!rawSlug) return { article: null, error: "No slug provided" };
-  const slug = decodeURIComponent(rawSlug)
   
-  // 🚀 Reverted to the ultra-safe 'articles' list query with exact variable matching
+  const targetSlug = decodeURIComponent(rawSlug).toLowerCase();
+  
+  // 🚀 Added 'author' to the GraphQL query so it fetches the new dropdown field
   const query = `
-    query GetArticle($slug: String!) {
-      articles(where: { slug: $slug }, first: 1) {
+    query GetAllArticles {
+      articles(first: 100, orderBy: publishedAt_DESC) {
         id
         title
         slug
@@ -25,6 +26,7 @@ async function getArticle(rawSlug: string) {
         publishedDate
         publishedAt
         category
+        author 
         image { url }
       }
     }
@@ -33,23 +35,22 @@ async function getArticle(rawSlug: string) {
     const res = await fetch(HYGRAPH_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        query, 
-        variables: { slug } 
-      }),
+      body: JSON.stringify({ query }),
       cache: 'no-store'
     })
     
     const json = await res.json()
     if (json.errors) return { article: null, error: json.errors[0].message }
     
-    return { article: json.data?.articles?.[0] || null, error: null }
+    const articles = json.data?.articles || [];
+    const foundArticle = articles.find((a: any) => a.slug?.toLowerCase() === targetSlug) || null;
+    
+    return { article: foundArticle, error: null }
   } catch (error: any) {
     return { article: null, error: error.message }
   }
 }
 
-// 🚀 Bypassing Next.js strict typings to guarantee Vercel accepts the build
 export async function generateMetadata(props: any): Promise<Metadata> {
   const resolvedParams = await Promise.resolve(props.params);
   const { article } = await getArticle(resolvedParams?.slug || '')
@@ -70,7 +71,6 @@ export async function generateMetadata(props: any): Promise<Metadata> {
 }
 
 export default async function ArticlePage(props: any) {
-  // 🚀 Guarantee params resolve without crashing Vercel's builder
   const resolvedParams = await Promise.resolve(props.params);
   const slug = resolvedParams?.slug || '';
   const { article, error } = await getArticle(slug)
@@ -82,13 +82,11 @@ export default async function ArticlePage(props: any) {
           <h2 className="text-2xl font-black text-red-600 dark:text-red-400 mb-4 uppercase tracking-widest">Article Render Error</h2>
           <p className="text-gray-700 dark:text-gray-300 font-mono text-sm break-words mb-6">{error || "Article not found in database."}</p>
           
-          {/* DEBUG BOX */}
           <div className="bg-white dark:bg-black p-4 rounded-lg text-left w-full mb-8 shadow-inner border border-red-100 dark:border-red-900/50">
-            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Searching Hygraph for Slug:</p>
+            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Searching for Slug:</p>
             <code className="text-[#C8102E] break-all font-mono text-sm">{decodeURIComponent(slug)}</code>
           </div>
 
-          {/* 🚀 Changed to a solid red block so we KNOW when Vercel pushes it live */}
           <Link href="/" className="inline-block bg-[#C8102E] text-white px-6 py-3 rounded-lg font-bold uppercase hover:bg-red-700 transition-colors">
             Return to Homepage
           </Link>
@@ -100,8 +98,11 @@ export default async function ArticlePage(props: any) {
   const wordCount = article.content?.html ? article.content.html.split(/\s+/).length : 0
   const readingTime = Math.max(1, Math.ceil(wordCount / 200))
   const displayCategory = (!article.category || article.category.toLowerCase() === 'general news') ? 'World' : article.category;
-
+  
   let formattedDate = article.publishedDate || 'Recent';
+  
+  // 🚀 Dynamic Author Logic: Uses the Hygraph dropdown, defaults to you if left blank
+  const displayAuthor = article.author || 'Orpheus Grant-Essilfie';
 
   return (
     <article className="w-full relative bg-[#f9fafb] dark:bg-[#0a0b10] min-h-screen">
@@ -127,12 +128,12 @@ export default async function ArticlePage(props: any) {
         <div className="flex flex-col gap-1 border-t border-b border-gray-200 dark:border-gray-800 py-6">
           <div className="flex items-center gap-3">
             <SmartImage 
-              baseName="orpheus" 
-              altName="Orpheus Grant-Essilfie" 
+              baseName={displayAuthor.split(' ')[0].toLowerCase()} 
+              altName={displayAuthor} 
               className="w-12 h-12 rounded-full object-cover shadow-sm border border-gray-200 dark:border-gray-700" 
             />
             <p className="text-lg text-gray-900 dark:text-white">
-              By <span className="font-bold">Orpheus Grant-Essilfie</span>
+              By <span className="font-bold">{displayAuthor}</span>
             </p>
           </div>
           <p className="text-gray-700 dark:text-gray-400 text-sm pl-[60px] font-medium">
