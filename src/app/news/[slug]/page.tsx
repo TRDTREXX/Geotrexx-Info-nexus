@@ -14,7 +14,6 @@ async function getArticle(rawSlug: string) {
   
   const targetSlug = decodeURIComponent(rawSlug).toLowerCase();
   
-  // 🚀 Added 'author' to the GraphQL query so it fetches the new dropdown field
   const query = `
     query GetAllArticles {
       articles(first: 100, orderBy: publishedAt_DESC) {
@@ -101,8 +100,16 @@ export default async function ArticlePage(props: any) {
   
   let formattedDate = article.publishedDate || 'Recent';
   
-  // 🚀 Dynamic Author Logic: Uses the Hygraph dropdown, defaults to you if left blank
-  const displayAuthor = article.author || 'Orpheus Grant-Essilfie';
+  // 🚀 THE TRANSLATOR DICTIONARY: Un-squishes the Hygraph API IDs
+  const authorMap: Record<string, { name: string, imageKey: string }> = {
+    'orpheusGrantEssilfie': { name: 'Orpheus Grant-Essilfie', imageKey: 'orpheus' },
+    'quistEbenezerAssan': { name: 'Quist Ebenezer Assan', imageKey: 'quist' },
+    'geotrexxDesk': { name: 'GEOTREXX Desk', imageKey: 'geotrexx' }
+  };
+
+  // Safely grab the author or default to you if blank/unrecognized
+  const rawAuthor = article.author || 'orpheusGrantEssilfie';
+  const authorInfo = authorMap[rawAuthor] || { name: 'Orpheus Grant-Essilfie', imageKey: 'orpheus' };
 
   return (
     <article className="w-full relative bg-[#f9fafb] dark:bg-[#0a0b10] min-h-screen">
@@ -127,13 +134,14 @@ export default async function ArticlePage(props: any) {
 
         <div className="flex flex-col gap-1 border-t border-b border-gray-200 dark:border-gray-800 py-6">
           <div className="flex items-center gap-3">
+            {/* 🚀 Now sending the perfect imageKey (e.g., 'orpheus') directly to the image component */}
             <SmartImage 
-              baseName={displayAuthor.split(' ')[0].toLowerCase()} 
-              altName={displayAuthor} 
+              baseName={authorInfo.imageKey} 
+              altName={authorInfo.name} 
               className="w-12 h-12 rounded-full object-cover shadow-sm border border-gray-200 dark:border-gray-700" 
             />
             <p className="text-lg text-gray-900 dark:text-white">
-              By <span className="font-bold">{displayAuthor}</span>
+              By <span className="font-bold">{authorInfo.name}</span>
             </p>
           </div>
           <p className="text-gray-700 dark:text-gray-400 text-sm pl-[60px] font-medium">
