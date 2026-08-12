@@ -50,12 +50,20 @@ async function getCategoryArticles(slug: string) {
     
     let articles = json.data?.articles || [];
     
-    // 🚀 THE FIX: Loose "Fuzzy Match" filtering instead of strict matching
-    const targetCategory = slug === 'world' ? 'general news' : slug;
-    
+    // 🚀 THE WORLD TAB FIX: Catches both "World" and "General News"
     articles = articles.filter((a: any) => {
       if (!a.category) return false;
-      return a.category.toLowerCase().includes(targetCategory.toLowerCase());
+      
+      const dbCategory = a.category.toLowerCase();
+      const targetSlug = slug.toLowerCase();
+      
+      // If we are on the World tab, accept multiple variations
+      if (targetSlug === 'world') {
+        return dbCategory.includes('world') || dbCategory.includes('general');
+      }
+      
+      // Otherwise, just do a fuzzy match for normal tabs (sports, business, tech)
+      return dbCategory.includes(targetSlug);
     });
 
     articles.sort((a: any, b: any) => getSortTime(b) - getSortTime(a));
