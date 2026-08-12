@@ -2,7 +2,6 @@ import NewsCard from '../components/NewsCard'
 import Link from 'next/link'
 import Image from 'next/image'
 
-// 🚀 THE FIX: These 3 lines command Vercel to NEVER freeze this page.
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -29,12 +28,11 @@ async function getLatestArticles() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
-      cache: 'no-store' // Double protection against caching
+      cache: 'no-store'
     })
     
     const json = await res.json()
     if (json.errors) return { data: [], error: json.errors[0].message }
-    
     return { data: json.data?.articles || [], error: null }
   } catch (error: any) {
     return { data: [], error: error.message }
@@ -54,7 +52,6 @@ export default async function HomePage() {
     )
   }
 
-  // If no articles exist yet
   if (!articles || articles.length === 0) {
     return (
       <div className="w-full py-40 flex flex-col items-center justify-center text-center px-4 min-h-[70vh]">
@@ -62,20 +59,17 @@ export default async function HomePage() {
           No News Published Yet
         </h1>
         <p className="text-gray-500 text-lg">
-          Head over to your Hygraph dashboard, write an article, and make sure you click <span className="font-bold text-[#C8102E]">Save and Publish</span>!
+          Publish an article in Hygraph to see it here!
         </p>
       </div>
     )
   }
 
-  // 🚀 Splits the news: 1 for the massive Hero banner, the rest for the grid below
   const heroArticle = articles[0];
   const gridArticles = articles.slice(1);
 
   return (
     <main className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 min-h-screen">
-      
-      {/* 🚀 LATEST BREAKING NEWS (Hero Section) */}
       <div className="mb-20">
         <div className="flex items-center gap-4 mb-6">
           <div className="h-4 w-4 bg-[#C8102E] animate-pulse rounded-full"></div>
@@ -92,10 +86,7 @@ export default async function HomePage() {
             priority
             className="object-cover group-hover:scale-105 transition-transform duration-700"
           />
-          
-          {/* Dark gradient so the white text is always perfectly readable over the picture */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent"></div>
-          
           <div className="absolute bottom-0 left-0 p-6 md:p-12 w-full max-w-5xl">
             <span className="inline-block bg-[#C8102E] text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-widest mb-4">
               {heroArticle.category || 'General News'}
@@ -110,7 +101,6 @@ export default async function HomePage() {
         </Link>
       </div>
 
-      {/* 🚀 THE NEWS GRID (For all older articles) */}
       {gridArticles.length > 0 && (
         <>
           <div className="border-b-2 border-gray-200 dark:border-gray-800 mb-8 pb-4">
@@ -133,7 +123,6 @@ export default async function HomePage() {
           </div>
         </>
       )}
-      
     </main>
   )
 }
