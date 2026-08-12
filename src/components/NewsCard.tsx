@@ -12,37 +12,37 @@ interface NewsCardProps {
 
 export default function NewsCard({ title, slug, excerpt, imageUrl, category, date }: NewsCardProps) {
   return (
-    <Link href={`/news/${slug}`} className="group flex flex-col bg-white dark:bg-[#1a1b23] rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-800">
-      {/* Image Container with Hover Zoom */}
-      <div className="relative h-56 w-full overflow-hidden bg-gray-200 dark:bg-gray-800">
+    // 🚀 THE FIX: Changed this link from /category/ to /news/
+    <Link href={`/news/${slug}`} className="group flex flex-col bg-white dark:bg-[#1a1b23] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-800">
+      
+      <div className="relative h-48 w-full overflow-hidden bg-gray-200 dark:bg-gray-800">
         <Image 
           src={imageUrl} 
-          alt={title}
-          fill
-          className="object-cover transform group-hover:scale-105 transition-transform duration-500 ease-in-out"
+          alt={title} 
+          fill 
+          className="object-cover group-hover:scale-105 transition-transform duration-500" 
         />
-        {/* Category Badge */}
-        <div className="absolute top-4 left-4 bg-[#C8102E] text-white text-xs font-black uppercase tracking-widest px-3 py-1 rounded-sm shadow-md">
-          {category}
-        </div>
       </div>
-
-      {/* Content Area */}
+      
       <div className="p-6 flex flex-col flex-grow">
-        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">{new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight mb-3 group-hover:text-[#C8102E] transition-colors line-clamp-2">
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-[#C8102E] text-[10px] font-black uppercase tracking-widest">
+            {category}
+          </span>
+          <span className="text-gray-400 text-xs font-medium">
+            {date}
+          </span>
+        </div>
+        
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-[#C8102E] transition-colors line-clamp-2 leading-snug">
           {title}
         </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mb-4 flex-grow">
+        
+        <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 leading-relaxed flex-grow">
           {excerpt}
         </p>
-        
-        {/* Read More Link */}
-        <div className="mt-auto flex items-center text-sm font-bold text-[#C8102E] uppercase tracking-wide group-hover:translate-x-1 transition-transform">
-          Read Story 
-          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-        </div>
       </div>
+      
     </Link>
   )
 }
