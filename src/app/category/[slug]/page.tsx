@@ -50,11 +50,14 @@ async function getCategoryArticles(slug: string) {
     
     let articles = json.data?.articles || [];
     
-    // Match the slug to the correct category
+    // 🚀 THE FIX: Loose "Fuzzy Match" filtering instead of strict matching
     const targetCategory = slug === 'world' ? 'general news' : slug;
-    articles = articles.filter((a: any) => a.category && a.category.toLowerCase() === targetCategory.toLowerCase());
+    
+    articles = articles.filter((a: any) => {
+      if (!a.category) return false;
+      return a.category.toLowerCase().includes(targetCategory.toLowerCase());
+    });
 
-    // Sort chronologically
     articles.sort((a: any, b: any) => getSortTime(b) - getSortTime(a));
 
     return { data: articles, error: null }
@@ -64,7 +67,6 @@ async function getCategoryArticles(slug: string) {
 }
 
 export default async function CategoryPage(props: any) {
-  // 🚀 Bypassing Next.js strict typings so Vercel builds perfectly
   const resolvedParams = await Promise.resolve(props.params);
   const slug = resolvedParams?.slug || '';
   

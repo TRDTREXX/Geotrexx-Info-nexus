@@ -52,16 +52,23 @@ async function getArticle(rawSlug: string) {
 
 export async function generateMetadata(props: any): Promise<Metadata> {
   const resolvedParams = await Promise.resolve(props.params);
-  const { article } = await getArticle(resolvedParams?.slug || '')
+  const slug = resolvedParams?.slug || '';
+  const { article } = await getArticle(slug)
   
   if (!article) return { title: 'Article Not Found | GEOTREXX' }
+
+  const officialUrl = `https://www.geotrexx.com/news/${slug}`;
 
   return {
     title: `${article.title || 'News'} | GEOTREXX`,
     description: article.summary || 'GEOTREXX News Article',
+    alternates: {
+      canonical: officialUrl,
+    },
     openGraph: {
       title: article.title,
       description: article.summary,
+      url: officialUrl,
       type: 'article',
       publishedTime: article.publishedAt,
       images: [{ url: article.image?.url || '', width: 1200, height: 630, alt: article.title || 'News' }],
@@ -100,14 +107,12 @@ export default async function ArticlePage(props: any) {
   
   let formattedDate = article.publishedDate || 'Recent';
   
-  // 🚀 THE TRANSLATOR DICTIONARY: Un-squishes the Hygraph API IDs
   const authorMap: Record<string, { name: string, imageKey: string }> = {
     'orpheusGrantEssilfie': { name: 'Orpheus Grant-Essilfie', imageKey: 'orpheus' },
     'quistEbenezerAssan': { name: 'Quist Ebenezer Assan', imageKey: 'quist' },
     'geotrexxDesk': { name: 'GEOTREXX Desk', imageKey: 'geotrexx' }
   };
 
-  // Safely grab the author or default to you if blank/unrecognized
   const rawAuthor = article.author || 'orpheusGrantEssilfie';
   const authorInfo = authorMap[rawAuthor] || { name: 'Orpheus Grant-Essilfie', imageKey: 'orpheus' };
 
@@ -134,7 +139,6 @@ export default async function ArticlePage(props: any) {
 
         <div className="flex flex-col gap-1 border-t border-b border-gray-200 dark:border-gray-800 py-6">
           <div className="flex items-center gap-3">
-            {/* 🚀 Now sending the perfect imageKey (e.g., 'orpheus') directly to the image component */}
             <SmartImage 
               baseName={authorInfo.imageKey} 
               altName={authorInfo.name} 
@@ -153,7 +157,8 @@ export default async function ArticlePage(props: any) {
       {article.image?.url && (
         <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-16">
           <div className="relative w-full aspect-video md:aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl bg-gray-200 dark:bg-gray-800">
-            <Image src={article.image.url} alt={article.title || 'Cover image'} fill priority className="object-cover" />
+            {/* 🚀 Changed to object-contain to stop image chopping */}
+            <Image src={article.image.url} alt={article.title || 'Cover image'} fill priority className="object-contain" />
           </div>
         </div>
       )}
