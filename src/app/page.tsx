@@ -1,31 +1,18 @@
 import NewsCard from '../components/NewsCard'
-import Image from 'next/image'
 import Link from 'next/link'
+import Image from 'next/image'
 
+// 🚀 THE FIX: These 3 lines command Vercel to NEVER freeze this page.
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
 
-const getSortTime = (article: any) => {
-  let time = 0;
-  if (article.publishedDate) {
-    if (article.publishedDate.includes('/')) {
-      const [d, m, y] = article.publishedDate.split('/');
-      time = new Date(`${y}-${m}-${d}T12:00:00`).getTime();
-    } else {
-      time = new Date(article.publishedDate).getTime();
-    }
-  } else if (article.publishedAt) {
-    time = new Date(article.publishedAt).getTime();
-  }
-  return isNaN(time) ? 0 : time;
-}
-
-const getLatestArticles = async () => {
+async function getLatestArticles() {
   const query = `
-    query GetArticles {
-      articles(first: 50, orderBy: publishedAt_DESC) {
+    query GetHomepageArticles {
+      articles(first: 21, orderBy: publishedAt_DESC) {
         id
         title
         slug
@@ -42,112 +29,111 @@ const getLatestArticles = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
-      cache: 'no-store'
+      cache: 'no-store' // Double protection against caching
     })
     
     const json = await res.json()
-    if (json.errors) return { data: null, error: json.errors[0].message }
+    if (json.errors) return { data: [], error: json.errors[0].message }
     
-    let articles = json.data?.articles || [];
-    articles.sort((a: any, b: any) => getSortTime(b) - getSortTime(a));
-
-    return { data: articles.slice(0, 16), error: null }
+    return { data: json.data?.articles || [], error: null }
   } catch (error: any) {
-    return { data: null, error: error.message }
+    return { data: [], error: error.message }
   }
 }
 
-const getDisplayCategory = (cat: string) => {
-  if (!cat) return 'News'
-  if (cat.toLowerCase() === 'general news') return 'World'
-  return cat
-}
-
-export default async function Home() {
+export default async function HomePage() {
   const { data: articles, error } = await getLatestArticles()
 
-  if (error || !articles || articles.length === 0) {
+  if (error) {
     return (
-      <div className="w-full py-32 flex flex-col items-center justify-center text-center px-4">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">No Stories Available</h2>
-        <p className="text-gray-500 max-w-md mx-auto">{error || "Please check your database connection."}</p>
+      <div className="w-full py-32 flex justify-center text-center px-4">
+        <p className="text-red-500 font-bold border-2 border-red-500 p-4 rounded-lg bg-red-50 dark:bg-red-900/20">
+          Database Connection Error: {error}
+        </p>
       </div>
     )
   }
 
-  const heroArticle = articles[0]
-  const gridArticles = articles.slice(1, 9) 
-  const sideArticles = articles.slice(9, 14)
+  // If no articles exist yet
+  if (!articles || articles.length === 0) {
+    return (
+      <div className="w-full py-40 flex flex-col items-center justify-center text-center px-4 min-h-[70vh]">
+        <h1 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white uppercase tracking-widest mb-4">
+          No News Published Yet
+        </h1>
+        <p className="text-gray-500 text-lg">
+          Head over to your Hygraph dashboard, write an article, and make sure you click <span className="font-bold text-[#C8102E]">Save and Publish</span>!
+        </p>
+      </div>
+    )
+  }
+
+  // 🚀 Splits the news: 1 for the massive Hero banner, the rest for the grid below
+  const heroArticle = articles[0];
+  const gridArticles = articles.slice(1);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row gap-8">
+    <main className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 min-h-screen">
       
-      <div className="w-full lg:w-2/3 flex flex-col gap-10">
-        <Link href={`/news/${heroArticle.slug}`} className="group relative block overflow-hidden rounded-2xl shadow-xl bg-gray-900">
-          <div className="relative h-[400px] md:h-[550px] w-full">
-            <Image 
-              src={heroArticle.image?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167"} 
-              fill 
-              className="object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-80" 
-              alt={heroArticle.title} 
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 p-6 md:p-10 w-full max-w-3xl">
-              <span className="bg-[#C8102E] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-sm shadow-md mb-4 inline-block">
-                {getDisplayCategory(heroArticle.category)}
-              </span>
-              <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4 group-hover:text-gray-300 transition-colors">
-                {heroArticle.title}
-              </h1>
-              <p className="text-gray-300 text-base md:text-lg line-clamp-2 leading-relaxed">
-                {heroArticle.summary}
-              </p>
-            </div>
+      {/* 🚀 LATEST BREAKING NEWS (Hero Section) */}
+      <div className="mb-20">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="h-4 w-4 bg-[#C8102E] animate-pulse rounded-full"></div>
+          <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white uppercase tracking-widest">
+            Latest Headlines
+          </h2>
+        </div>
+        
+        <Link href={`/news/${heroArticle.slug}`} className="group relative block w-full h-[50vh] md:h-[60vh] min-h-[400px] rounded-3xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800">
+          <Image 
+            src={heroArticle.image?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167"} 
+            alt={heroArticle.title}
+            fill
+            priority
+            className="object-cover group-hover:scale-105 transition-transform duration-700"
+          />
+          
+          {/* Dark gradient so the white text is always perfectly readable over the picture */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent"></div>
+          
+          <div className="absolute bottom-0 left-0 p-6 md:p-12 w-full max-w-5xl">
+            <span className="inline-block bg-[#C8102E] text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-widest mb-4">
+              {heroArticle.category || 'General News'}
+            </span>
+            <h3 className="text-3xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight group-hover:text-gray-300 transition-colors">
+              {heroArticle.title}
+            </h3>
+            <p className="text-gray-300 text-lg md:text-xl line-clamp-2 md:line-clamp-3 font-light max-w-3xl">
+              {heroArticle.summary}
+            </p>
           </div>
         </Link>
+      </div>
 
-        {gridArticles.length > 0 && (
-          <div className="border-t border-gray-200 dark:border-gray-800 pt-8">
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-widest mb-8">Latest Updates</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {gridArticles.map((article: any) => (
-                <NewsCard 
-                  key={article.id}
-                  title={article.title}
-                  slug={article.slug}
-                  excerpt={article.summary || "Click to read the full story and dive deep into the analysis."}
-                  imageUrl={article.image?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80"}
-                  category={getDisplayCategory(article.category)}
-                  date={article.publishedDate || article.publishedAt} 
-                />
-              ))}
-            </div>
+      {/* 🚀 THE NEWS GRID (For all older articles) */}
+      {gridArticles.length > 0 && (
+        <>
+          <div className="border-b-2 border-gray-200 dark:border-gray-800 mb-8 pb-4">
+             <h2 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-widest">
+               More News
+             </h2>
           </div>
-        )}
-      </div>
-
-      <div className="w-full lg:w-1/3 flex flex-col gap-6 bg-white dark:bg-[#1a1b23] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm h-fit">
-        <h2 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-widest border-b-2 border-[#C8102E] pb-2 inline-block">Trending Now</h2>
-        <div className="flex flex-col gap-6 mt-2">
-          {sideArticles.map((article: any) => (
-            <Link href={`/news/${article.slug}`} key={article.id} className="group flex gap-4 items-center border-b border-gray-100 dark:border-gray-800 pb-6 last:border-0 last:pb-0">
-              <div className="relative h-20 w-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800">
-                <Image src={article.image?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167"} fill className="object-cover group-hover:scale-110 transition-transform duration-500" alt="thumb" />
-              </div>
-              <div className="flex-grow">
-                <span className="text-[#C8102E] text-[9px] font-black uppercase tracking-widest block mb-1">
-                  {getDisplayCategory(article.category)}
-                </span>
-                <h3 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-3 group-hover:text-[#C8102E] transition-colors leading-snug">
-                  {article.title}
-                </h3>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-    </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {gridArticles.map((article: any) => (
+              <NewsCard 
+                key={article.id}
+                title={article.title}
+                slug={article.slug}
+                excerpt={article.summary || "Click to read the full story and dive deep into the analysis."}
+                imageUrl={article.image?.url || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167"}
+                category={article.category || 'General'}
+                date={article.publishedDate || article.publishedAt}
+              />
+            ))}
+          </div>
+        </>
+      )}
+      
+    </main>
   )
 }
