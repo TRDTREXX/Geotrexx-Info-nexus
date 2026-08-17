@@ -1,53 +1,70 @@
+export const dynamic = 'force-dynamic'
+
 import { client } from '../../../sanity/lib/client'
 import { urlFor } from '../../../sanity/lib/image'
 import { PortableText } from '@portabletext/react'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
-// 1. DYNAMIC METADATA (For Facebook/X Link Previews)
+// 1. DYNAMIC METADATA (For Social Media Cards & Previews)
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  // Await the params before using the slug!
   const { slug } = await params
 
-  const post = await client.fetch(`*[_type == "post" && slug.current == $slug][0]`, { slug })
+  // Queries for either 'article' or 'post' to ensure compatibility with your schema
+  const post = await client.fetch(
+    `*[_type in ["article", "post"] && slug.current == $slug][0]`,
+    { slug }
+  )
 
   if (!post) {
-    return {}
+    return {
+      title: 'Article Not Found | GEOTREXX',
+    }
   }
 
   return {
     title: `${post.title} | GEOTREXX`,
-    description: "Read the full story on GEOTREXX Info Nexus.",
+    description: post.summary || 'Read the full story on GEOTREXX.',
     openGraph: {
       title: post.title,
-      images: post.mainImage ? [
-        {
-          url: urlFor(post.mainImage).width(1200).height(630).url(),
-          width: 1200,
-          height: 630,
-        },
-      ] : [],
+      description: post.summary || 'Read the full story on GEOTREXX.',
+      images: post.mainImage
+        ? [
+            {
+              url: urlFor(post.mainImage).width(1200).height(630).url(),
+              width: 1200,
+              height: 630,
+            },
+          ]
+        : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.summary || 'Read the full story on GEOTREXX.',
+      images: post.mainImage ? [urlFor(post.mainImage).width(1200).height(630).url()] : [],
     },
   }
 }
 
-// 2. MAIN PAGE COMPONENT
+// 2. MAIN ARTICLE PAGE
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
-  // Await the params before using the slug!
   const { slug } = await params
 
-  // Fetch the full article including the category and author data from Sanity
-  const post = await client.fetch(`*[_type == "post" && slug.current == $slug][0]{
-    title,
-    body,
-    publishedAt,
-    mainImage,
-    category,
-    "authorName": author->name,
-    "authorImage": author->image
-  }`, { slug })
+  // Fetch story details from Sanity matching either type
+  const post = await client.fetch(
+    `*[_type in ["article", "post"] && slug.current == $slug][0]{
+      title,
+      body,
+      publishedAt,
+      mainImage,
+      category,
+      "authorName": author->name,
+      "authorImage": author->image
+    }`,
+    { slug }
+  )
 
-  // If the article doesn't exist, show a 404 page
   if (!post) {
     notFound()
   }
@@ -55,20 +72,19 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   return (
     <main className="max-w-4xl mx-auto px-4 py-10">
       <article>
-        
-        {/* DYNAMIC CATEGORY FIX */}
+        {/* Dynamic Category Tag */}
         <div className="text-center mb-4">
           <span className="text-red-600 font-bold uppercase tracking-wider text-sm">
             {post.category || 'News'}
           </span>
         </div>
 
-        {/* TITLE */}
+        {/* Title */}
         <h1 className="text-4xl md:text-5xl font-black text-center text-slate-900 mb-8 leading-tight">
           {post.title}
         </h1>
 
-        {/* AUTHOR BLOCK */}
+        {/* Author Details & Date */}
         <div className="flex items-center justify-center gap-3 mb-10">
           {post.authorImage && (
             <Image
@@ -79,22 +95,24 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               className="rounded-full bg-gray-200"
             />
           )}
-          <div className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+          <div className="text-sm font-semibold text-gray-700 uppercase tracking-wide text-center">
             BY {post.authorName || 'GEOTREXX'}
-            <br />
             {post.publishedAt && (
-              <span className="text-gray-500 font-normal">
-                {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </span>
+              <>
+                <br />
+                <span className="text-gray-500 font-normal">
+                  {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+              </>
             )}
           </div>
         </div>
 
-        {/* MAIN COVER IMAGE */}
+        {/* Featured Main Image */}
         {post.mainImage && (
           <div className="mb-10 w-full relative h-[400px] md:h-[500px]">
             <Image
@@ -107,11 +125,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         )}
 
-        {/* ARTICLE BODY / CONTENT */}
+        {/* Article Body Content */}
         <div className="prose prose-lg max-w-none prose-slate">
           {post.body ? <PortableText value={post.body} /> : null}
         </div>
-
       </article>
     </main>
   )
