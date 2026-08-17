@@ -1,13 +1,12 @@
 export default {
-  name: 'article',
-  title: 'Article',
+  name: 'post',
+  title: 'Post',
   type: 'document',
   fields: [
     {
       name: 'title',
       title: 'Title',
       type: 'string',
-      validation: Rule => Rule.required()
     },
     {
       name: 'slug',
@@ -17,45 +16,71 @@ export default {
         source: 'title',
         maxLength: 96,
       },
-      validation: Rule => Rule.required()
     },
     {
-      name: 'summary',
-      title: 'Summary',
-      type: 'text',
-      rows: 3,
-      validation: Rule => Rule.max(200).warning('Keep summaries punchy for the homepage.')
+      name: 'author',
+      title: 'Author',
+      type: 'reference',
+      to: { type: 'author' },
     },
     {
       name: 'mainImage',
-      title: 'Main Image',
+      title: 'Main image',
       type: 'image',
       options: {
-        hotspot: true, // Allows you to crop images directly in the studio
+        hotspot: true,
+      },
+    },
+    {
+      name: 'category',
+      title: 'Category',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Ghana', value: 'ghana' },
+          { title: 'Politics', value: 'politics' },
+          { title: 'Business', value: 'business' },
+          { title: 'Sports', value: 'sports' },
+          { title: 'Football', value: 'football' },
+          { title: 'STEM', value: 'stem' },
+          { title: 'Entertainment', value: 'entertainment' },
+          { title: 'World', value: 'world' },
+          { title: 'Opinion', value: 'opinion' }
+        ],
+        layout: 'dropdown'
       }
     },
     {
-      name: 'editorialCategory',
-      title: 'Editorial Category',
-      type: 'reference',
-      to: [{ type: 'category' }],
-      description: 'Select the most specific category (e.g., Transfers, Accra, AI).',
-      validation: Rule => Rule.required()
-    },
-    {
       name: 'publishedAt',
-      title: 'Published Date',
+      title: 'Published at',
       type: 'datetime',
-      initialValue: () => new Date().toISOString()
     },
     {
-      name: 'content',
-      title: 'Content',
-      type: 'array', // This is Sanity's version of a rich text editor
+      name: 'body',
+      title: 'Body',
+      type: 'array',
       of: [
-        { type: 'block' },
-        { type: 'image' }
-      ]
-    }
-  ]
+        {
+          type: 'block',
+        },
+        {
+          type: 'image',
+          options: { hotspot: true },
+        },
+      ],
+    },
+  ],
+  preview: {
+    select: {
+      title: 'title',
+      author: 'author.name',
+      media: 'mainImage',
+    },
+    prepare(selection) {
+      const { author } = selection
+      return Object.assign({}, selection, {
+        subtitle: author && `by ${author}`,
+      })
+    },
+  },
 }
