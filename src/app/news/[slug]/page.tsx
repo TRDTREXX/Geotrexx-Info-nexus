@@ -6,13 +6,11 @@ import { PortableText } from '@portabletext/react'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
-// 1. DYNAMIC METADATA (For Social Media Cards & Previews)
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
-  // Queries for either 'article' or 'post' to ensure compatibility with your schema
   const post = await client.fetch(
-    `*[_type in ["article", "post"] && slug.current == $slug][0]`,
+    `*[_type == "post" && slug.current == $slug][0]`,
     { slug }
   )
 
@@ -24,10 +22,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   return {
     title: `${post.title} | GEOTREXX`,
-    description: post.summary || 'Read the full story on GEOTREXX.',
+    description: 'Read the full story on GEOTREXX.',
     openGraph: {
       title: post.title,
-      description: post.summary || 'Read the full story on GEOTREXX.',
+      description: 'Read the full story on GEOTREXX.',
       images: post.mainImage
         ? [
             {
@@ -41,19 +39,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     twitter: {
       card: 'summary_large_image',
       title: post.title,
-      description: post.summary || 'Read the full story on GEOTREXX.',
+      description: 'Read the full story on GEOTREXX.',
       images: post.mainImage ? [urlFor(post.mainImage).width(1200).height(630).url()] : [],
     },
   }
 }
 
-// 2. MAIN ARTICLE PAGE
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
-  // Fetch story details from Sanity matching either type
   const post = await client.fetch(
-    `*[_type in ["article", "post"] && slug.current == $slug][0]{
+    `*[_type == "post" && slug.current == $slug][0]{
       title,
       body,
       publishedAt,
@@ -72,7 +68,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   return (
     <main className="max-w-4xl mx-auto px-4 py-10">
       <article>
-        {/* Dynamic Category Tag */}
+        {/* Category Label */}
         <div className="text-center mb-4">
           <span className="text-red-600 font-bold uppercase tracking-wider text-sm">
             {post.category || 'News'}
@@ -84,7 +80,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           {post.title}
         </h1>
 
-        {/* Author Details & Date */}
+        {/* Author / Date */}
         <div className="flex items-center justify-center gap-3 mb-10">
           {post.authorImage && (
             <Image
@@ -112,7 +108,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
 
-        {/* Featured Main Image */}
+        {/* Featured Image */}
         {post.mainImage && (
           <div className="mb-10 w-full relative h-[400px] md:h-[500px]">
             <Image
@@ -125,7 +121,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         )}
 
-        {/* Article Body Content */}
+        {/* Body */}
         <div className="prose prose-lg max-w-none prose-slate">
           {post.body ? <PortableText value={post.body} /> : null}
         </div>

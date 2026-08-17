@@ -7,6 +7,7 @@ export default {
       name: 'title',
       title: 'Title',
       type: 'string',
+      validation: (Rule) => Rule.required(),
     },
     {
       name: 'slug',
@@ -16,12 +17,13 @@ export default {
         source: 'title',
         maxLength: 96,
       },
+      validation: (Rule) => Rule.required(),
     },
     {
       name: 'author',
       title: 'Author',
       type: 'reference',
-      to: { type: 'author' },
+      to: [{ type: 'author' }],
     },
     {
       name: 'mainImage',
@@ -45,10 +47,10 @@ export default {
           { title: 'STEM', value: 'stem' },
           { title: 'Entertainment', value: 'entertainment' },
           { title: 'World', value: 'world' },
-          { title: 'Opinion', value: 'opinion' }
+          { title: 'Opinion', value: 'opinion' },
         ],
-        layout: 'dropdown'
-      }
+        layout: 'dropdown',
+      },
     },
     {
       name: 'publishedAt',
