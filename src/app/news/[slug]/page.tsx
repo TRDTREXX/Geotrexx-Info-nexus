@@ -6,11 +6,16 @@ import { PortableText } from '@portabletext/react'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
+// 1. DYNAMIC METADATA (Social Media Previews)
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
   const post = await client.fetch(
-    `*[_type == "post" && slug.current == $slug][0]`,
+    `*[slug.current == $slug && !(_id in path("drafts.**"))][0]{
+      title,
+      "summary": coalesce(summary, description, "Read the full story on GEOTREXX."),
+      "mainImage": coalesce(mainImage, image, coverImage)
+    }`,
     { slug }
   )
 
@@ -22,10 +27,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   return {
     title: `${post.title} | GEOTREXX`,
-    description: 'Read the full story on GEOTREXX.',
+    description: post.summary,
     openGraph: {
       title: post.title,
-      description: 'Read the full story on GEOTREXX.',
+      description: post.summary,
       images: post.mainImage
         ? [
             {
@@ -39,24 +44,26 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     twitter: {
       card: 'summary_large_image',
       title: post.title,
-      description: 'Read the full story on GEOTREXX.',
+      description: post.summary,
       images: post.mainImage ? [urlFor(post.mainImage).width(1200).height(630).url()] : [],
     },
   }
 }
 
+// 2. MAIN ARTICLE PAGE
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
+  // Flexible GROQ query: catches any document type and resolves both old/new field structures
   const post = await client.fetch(
-    `*[_type == "post" && slug.current == $slug][0]{
+    `*[slug.current == $slug && !(_id in path("drafts.**"))][0]{
       title,
-      body,
+      "body": coalesce(body, content, articleBody),
       publishedAt,
-      mainImage,
-      category,
-      "authorName": author->name,
-      "authorImage": author->image
+      "mainImage": coalesce(mainImage, image, coverImage),
+      "category": coalesce(category->title, category->name, category, "News"),
+      "authorName": coalesce(author->name, author->title, author, "GEOTREXX"),
+      "authorImage": coalesce(author->image, authorImage)
     }`,
     { slug }
   )
@@ -68,10 +75,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   return (
     <main className="max-w-4xl mx-auto px-4 py-10">
       <article>
-        {/* Category Label */}
+        {/* Category Badge */}
         <div className="text-center mb-4">
           <span className="text-red-600 font-bold uppercase tracking-wider text-sm">
-            {post.category || 'News'}
+            {post.category}
           </span>
         </div>
 
@@ -80,19 +87,19 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           {post.title}
         </h1>
 
-        {/* Author / Date */}
+        {/* Author Details & Date */}
         <div className="flex items-center justify-center gap-3 mb-10">
           {post.authorImage && (
             <Image
               src={urlFor(post.authorImage).width(50).height(50).url()}
-              alt={post.authorName || 'Author'}
+              alt={typeof post.authorName === 'string' ? post.authorName : 'Author'}
               width={50}
               height={50}
               className="rounded-full bg-gray-200"
             />
           )}
           <div className="text-sm font-semibold text-gray-700 uppercase tracking-wide text-center">
-            BY {post.authorName || 'GEOTREXX'}
+            BY {typeof post.authorName === 'string' ? post.authorName : 'GEOTREXX'}
             {post.publishedAt && (
               <>
                 <br />
@@ -108,12 +115,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
 
-        {/* Featured Image */}
+        {/* Featured Cover Image */}
         {post.mainImage && (
           <div className="mb-10 w-full relative h-[400px] md:h-[500px]">
             <Image
               src={urlFor(post.mainImage).url()}
-              alt={post.title}
+              alt={post.title || 'Featured Image'}
               fill
               className="object-cover rounded-lg"
               priority
@@ -121,9 +128,15 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         )}
 
-        {/* Body */}
+        {/* Article Body */}
         <div className="prose prose-lg max-w-none prose-slate">
-          {post.body ? <PortableText value={post.body} /> : null}
+          {post.body ? (
+            Array.isArray(post.body) ? (
+              <PortableText value={post.body} />
+            ) : typeof post.body === 'string' ? (
+              <p>{post.body}</p>
+            ) : null
+          ) : null}
         </div>
       </article>
     </main>
