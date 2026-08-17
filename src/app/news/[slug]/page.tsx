@@ -1,138 +1,126 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import type { Metadata } from 'next'
-import ReadingProgressBar from '../../../components/ReadingProgressBar'
-import SmartImage from '../../../components/SmartImage'
+import { createClient } from '@sanity/client';
+import { notFound } from 'next/navigation';
 
-export const revalidate = 0;
-export const dynamic = 'force-dynamic';
+const client = createClient({
+  projectId: 'x0tpoga9',
+  dataset: 'production',
+  useCdn: false,
+  apiVersion: '2024-03-01',
+});
 
-const HYGRAPH_ENDPOINT = "https://eu-west-2.cdn.hygraph.com/content/cmrms81py00mq07w07a3zcs1e/master"
+export const revalidate = 10;
 
-async function getArticle(rawSlug: string) {
-  if (!rawSlug) return { article: null, error: "No slug provided" };
-  const targetSlug = decodeURIComponent(rawSlug).toLowerCase();
-  const query = `
-    query GetAllArticles {
-      articles(first: 100, orderBy: publishedAt_DESC) {
-        id title slug summary content { html }
-        publishedDate publishedAt category author image { url }
-      }
+const CATEGORY_MATRIX = {
+  SPORTS: ['sport', 'football', 'soccer', 'xavi', 'barcelona', 'madrid', 'chelsea', 'arsenal', 'coach', 'stadium', 'match', 'tournament', 'fifa', 'uefa', 'nba', 'basketball', 'tennis', 'transfer', 'premier league', 'black stars', 'la liga', 'athletics'],
+  POLITICS: ['politic', 'minister', 'president', 'election', 'government', 'npp', 'ndc', 'parliament', 'mps', 'vote', 'policy', 'campaign', 'mahama', 'bawumia', 'akufo-addo', 'diplomat'],
+  BUSINESS: ['business', 'econom', 'market', 'bank', 'finance', 'cedi', 'dollar', 'inflation', 'trade', 'investment', 'imf', 'debt', 'revenue', 'tax', 'corporate', 'industry'],
+  STEM: ['stem', 'science', 'tech', 'ai', 'artificial intelligence', 'innovation', 'engineering', 'math', 'software', 'app', 'digital', 'cyber', 'robot', 'space', 'elon', 'musk', 'tesla', 'spacex', 'trillionaire'],
+  ENTERTAINMENT: ['entertain', 'music', 'movie', 'film', 'celebrity', 'actor', 'actress', 'singer', 'concert', 'album', 'award', 'hollywood', 'lifestyle', 'artist', 'mrbeast', 'mr beast', 'youtube', 'married', 'marriage', 'wedding']
+};
+
+function determineCategory(article: any) {
+  if (article.legacyCategory) {
+    const exactCat = article.legacyCategory.toLowerCase().trim();
+    if (['sports', 'politics', 'business', 'stem', 'entertainment', 'world'].includes(exactCat)) {
+      return exactCat.toUpperCase();
     }
-  `
-  try {
-    const res = await fetch(HYGRAPH_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-      cache: 'no-store'
-    })
-    const json = await res.json()
-    if (json.errors) return { article: null, error: json.errors[0].message }
-    const articles = json.data?.articles || [];
-    const foundArticle = articles.find((a: any) => a.slug?.toLowerCase() === targetSlug) || null;
-    return { article: foundArticle, error: null }
-  } catch (error: any) {
-    return { article: null, error: error.message }
   }
+
+  const textToScan = `${article.legacyCategory || ''} ${article.category || ''} ${article.title || ''} ${article.summary || ''}`.toLowerCase();
+
+  for (const [categoryName, keywords] of Object.entries(CATEGORY_MATRIX)) {
+    if (keywords.some(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+      return regex.test(textToScan);
+    })) {
+      return categoryName;
+    }
+  }
+
+  return 'GHANA';
 }
 
-export async function generateMetadata(props: any): Promise<Metadata> {
-  const resolvedParams = await Promise.resolve(props.params);
-  const slug = resolvedParams?.slug || '';
-  const { article } = await getArticle(slug)
-  if (!article) return { title: 'Article Not Found | GEOTREXX' }
-  const officialUrl = `https://www.geotrexx.com/news/${slug}`;
+export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params;
+  const slug = resolvedParams.slug;
 
-  return {
-    title: `${article.title || 'News'} | GEOTREXX`,
-    description: article.summary || 'GEOTREXX News Article',
-    alternates: { canonical: officialUrl },
-    openGraph: {
-      title: article.title, description: article.summary, url: officialUrl, type: 'article',
-      publishedTime: article.publishedAt,
-      images: [{ url: article.image?.url || '', width: 1200, height: 630, alt: article.title || 'News' }],
-    },
-  }
-}
+  const article = await client.fetch(`
+    *[_type == "article" && slug.current == $slug][0]{
+      title,
+      publishedAt,
+      "imageUrl": mainImage.asset->url,
+      legacyCategory,
+      category,
+      content,
+      "authorNameRef": author->name,
+      "authorImageRef": author->image.asset->url,
+      authorName,
+      author
+    }
+  `, { slug: slug });
 
-export default async function ArticlePage(props: any) {
-  const resolvedParams = await Promise.resolve(props.params);
-  const slug = resolvedParams?.slug || '';
-  const { article, error } = await getArticle(slug)
+  if (!article) return notFound();
 
-  if (error || !article) {
-    return (
-      <div className="w-full py-32 flex flex-col items-center justify-center text-center px-4 min-h-[60vh]">
-        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-2xl p-8 max-w-2xl w-full">
-          <h2 className="text-2xl font-black text-red-600 mb-4 uppercase tracking-widest">Article Render Error</h2>
-          <p className="text-gray-700 dark:text-gray-300 font-mono text-sm break-words mb-6">{error || "Article not found in database."}</p>
-          <Link href="/" className="inline-block bg-[#C8102E] text-white px-6 py-3 rounded-lg font-bold uppercase hover:bg-red-700 transition-colors">
-            Return to Homepage
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
-  const wordCount = article.content?.html ? article.content.html.split(/\s+/).length : 0
-  const readingTime = Math.max(1, Math.ceil(wordCount / 200))
-  const displayCategory = (!article.category || article.category.toLowerCase() === 'general news') ? 'World' : article.category;
-  let formattedDate = article.publishedDate || 'Recent';
+  const mappedCategory = determineCategory(article);
   
-  const authorMap: Record<string, { name: string, imageKey: string }> = {
-    'orpheusGrantEssilfie': { name: 'Orpheus Grant-Essilfie', imageKey: 'orpheus' },
-    'quistEbenezerAssan': { name: 'Quist Ebenezer Assan', imageKey: 'quist' },
-    'geotrexxDesk': { name: 'GEOTREXX Desk', imageKey: 'geotrexx' }
-  };
-  const rawAuthor = article.author || 'orpheusGrantEssilfie';
-  const authorInfo = authorMap[rawAuthor] || { name: 'Orpheus Grant-Essilfie', imageKey: 'orpheus' };
+  const finalAuthor = article.authorNameRef || article.authorName || article.author || 'Orpheus Grant-Essilfie';
+  
+  let finalAuthorImage = article.authorImageRef;
+  if (!finalAuthorImage) {
+    if (finalAuthor.includes('Orpheus')) finalAuthorImage = '/orpheus.png.JPG';
+    else if (finalAuthor.includes('Quist')) finalAuthorImage = '/quist.png.jpeg';
+  }
+
+  const date = new Date(article.publishedAt).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric'
+  });
 
   return (
-    <article className="w-full relative bg-[#f9fafb] dark:bg-[#0a0b10] min-h-screen">
-      <ReadingProgressBar />
-      <header className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-10">
-        <div className="flex items-center gap-3 mb-6 text-sm font-bold tracking-widest uppercase">
-          <Link href={`/category/${displayCategory.toLowerCase()}`} className="text-[#C8102E] hover:opacity-80">
-            {displayCategory}
-          </Link>
-          <span className="text-gray-300 dark:text-gray-700">&bull;</span>
-          <span className="text-gray-500">{readingTime} MIN READ</span>
-        </div>
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 dark:text-white leading-[1.1] mb-6 tracking-tight">
-          {article.title}
-        </h1>
-        <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed font-light mb-10">
-          {article.summary}
-        </p>
-        <div className="flex flex-col gap-1 border-t border-b border-gray-200 dark:border-gray-800 py-6">
-          <div className="flex items-center gap-3">
-            <SmartImage 
-              baseName={authorInfo.imageKey} altName={authorInfo.name} 
-              className="w-12 h-12 rounded-full object-cover shadow-sm border border-gray-200 dark:border-gray-700" 
-            />
-            <p className="text-lg text-gray-900 dark:text-white">
-              By <span className="font-bold">{authorInfo.name}</span>
-            </p>
+    <main className="max-w-4xl mx-auto px-4 py-12">
+      <article>
+        <header className="mb-10 text-center">
+          <div className="text-sm font-black text-[#C8102E] uppercase tracking-widest mb-4">
+            {mappedCategory}
           </div>
-          <p className="text-gray-700 dark:text-gray-400 text-sm pl-[60px] font-medium">{formattedDate}</p>
-        </div>
-      </header>
-
-      {article.image?.url && (
-        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-16">
-          <div className="relative w-full aspect-video md:aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl bg-gray-200 dark:bg-gray-800">
-            <Image src={article.image.url} alt={article.title || 'Cover image'} fill priority className="object-contain" />
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 dark:text-white mb-8 leading-tight">
+            {article.title}
+          </h1>
+          
+          <div className="flex items-center justify-center space-x-4 mb-6">
+            <div className="w-12 h-12 rounded-full border-2 border-gray-200 dark:border-gray-800 overflow-hidden bg-gray-100 flex items-center justify-center shrink-0">
+               {finalAuthorImage ? (
+                 <img src={finalAuthorImage} alt={finalAuthor} className="w-full h-full object-cover" />
+               ) : (
+                 <span className="text-[#C8102E] font-black text-lg">
+                   {finalAuthor.charAt(0).toUpperCase()}
+                 </span>
+               )}
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                By {finalAuthor}
+              </p>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{date}</p>
+            </div>
           </div>
-        </div>
-      )}
+        </header>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 flex flex-col md:flex-row gap-10 relative">
-        <div 
-          className="prose prose-lg dark:prose-invert prose-headings:font-black prose-a:text-[#C8102E] hover:prose-a:opacity-80 prose-img:rounded-xl w-full max-w-none"
-          dangerouslySetInnerHTML={{ __html: article.content?.html || '' }}
-        />
-      </div>
-    </article>
-  )
+        {article.imageUrl && (
+          <div className="w-full mb-12 overflow-hidden rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
+            <img src={article.imageUrl} alt={article.title} className="w-full h-auto object-cover" />
+          </div>
+        )}
+
+        <div className="prose prose-lg md:prose-xl dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 font-serif">
+          {article.content?.map((block: any, index: number) => {
+            if (block._type === 'block') {
+              const text = block.children.map((child: any) => child.text).join('');
+              return <p key={index} className="mb-6 leading-relaxed">{text}</p>;
+            }
+            return null;
+          })}
+        </div>
+      </article>
+    </main>
+  );
 }

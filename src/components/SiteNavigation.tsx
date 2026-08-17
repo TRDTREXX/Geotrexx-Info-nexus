@@ -1,113 +1,171 @@
-'use client'
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import ThemeToggle from './ThemeToggle'
+"use client";
 
-export default function SiteNavigation({ tickerText = "GEOTREXX brings you the truth first." }: { tickerText?: string }) {
-  const [isSidebarOpen, setSidebarOpen] = useState(false)
+import Link from 'next/link';
+import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
 
+export default function SiteNavigation({ tickerText = "GEOTREXX: UNBIASED, ACCURATE AND AUTHORITATIVE." }: { tickerText?: string }) {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  // Prevent scrolling when mobile menu is open
   useEffect(() => {
-    if (isSidebarOpen) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = 'auto'
-  }, [isSidebarOpen])
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [mobileMenuOpen]);
 
-  const tabs = ['Politics', 'Business', 'Sports', 'Technology', 'Entertainment', 'World', 'Opinion']
-  
-  const safeTickerText = tickerText || "GEOTREXX brings you the truth first."
+  const navLinks = [
+    { name: 'HOME', path: '/' },
+    { name: 'GHANA', path: '/category/ghana', sub: ['Latest', 'Accra', 'Regions', 'Society', 'Education', 'Health', 'Crime & Security'] },
+    { name: 'POLITICS', path: '/category/politics', sub: ['Ghana Politics', 'Government', 'Parliament', 'Elections', 'Political Analysis'] },
+    { name: 'BUSINESS', path: '/category/business', sub: ['Economy', 'Finance', 'Banking', 'Markets', 'Companies', 'Energy'] },
+    { name: 'SPORTS', path: '/category/sports', sub: ['Football', 'Transfers', 'Basketball', 'Tennis', 'Boxing', 'Athletics', 'Motorsport'] },
+    { name: 'STEM', path: '/category/stem', sub: ['Science', 'Technology', 'Engineering', 'Mathematics', 'AI', 'Innovation', 'Space'] },
+    { name: 'ENTERTAINMENT', path: '/category/entertainment', sub: ['Music', 'Movies & TV', 'Celebrity', 'Arts', 'Lifestyle'] },
+    { name: 'WORLD', path: '/category/world', sub: ['Africa', 'Europe', 'Americas', 'Asia', 'Middle East', 'International'] },
+    { name: 'OPINION', path: '/category/opinion', sub: ['Editorial', 'Analysis', 'Commentary', 'Columns'] },
+  ];
 
   return (
-    <>
-      <style>{`
-        @keyframes ticker {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-33.333%); }
-        }
-        .animate-ticker {
-          display: inline-block;
-          white-space: nowrap; /* 🚀 FORCES A SINGLE LINE */
-          animation: ticker 40s linear infinite;
-        }
-        .ticker-container:hover .animate-ticker {
-          animation-play-state: paused;
-        }
-      `}</style>
+    <div className="w-full flex flex-col sticky top-0 z-50 bg-white dark:bg-[#0a0b10]">
+      
+      {/* 1. TICKER TAPE */}
+      <div className="bg-[#C8102E] text-white flex items-center h-10 text-xs font-bold tracking-[0.2em] overflow-hidden relative shadow-md z-20">
+        <div className="px-4 z-10 flex items-center bg-[#C8102E] h-full border-r border-white/20 whitespace-nowrap absolute left-0 shadow-[5px_0_15px_rgba(200,16,46,1)]">
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse mr-2"></span>
+          BREAKING
+        </div>
+        <div className="flex-1 overflow-hidden h-full flex items-center relative">
+          <div className="animate-ticker">
+            {tickerText} {tickerText}
+          </div>
+        </div>
+      </div>
 
-      {isSidebarOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]" onClick={() => setSidebarOpen(false)} />}
-      <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-[#0a0b10] z-[90] transform transition-transform duration-300 border-r border-gray-200 dark:border-gray-800 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
-          <Link href="/" onClick={() => setSidebarOpen(false)} className="block">
-            <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="h-10 w-10 object-cover rounded-full shadow-sm bg-gray-100 dark:bg-gray-800 p-1" />
-          </Link>
-          <button onClick={() => setSidebarOpen(false)} className="text-gray-500 hover:text-[#C8102E] transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+      {/* 2. MAIN HEADER */}
+      <header className="w-full border-b border-gray-200 dark:border-gray-800 h-20 md:h-24 flex items-center justify-between px-4 md:px-8 transition-colors z-30 relative shadow-sm">
+        
+        {/* Mobile Menu Button */}
+        <div className="flex items-center w-1/3 md:hidden">
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
+            className="flex items-center space-x-2 text-gray-900 dark:text-white hover:text-[#C8102E] dark:hover:text-[#C8102E] transition-colors p-2 -ml-2"
+            aria-label="Toggle Menu"
+          >
+            {mobileMenuOpen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#C8102E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
           </button>
         </div>
-        <div className="flex-grow overflow-y-auto p-6 flex flex-col gap-6">
-          <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Sections</h3>
-          {tabs.map((tab) => (
-            <Link key={tab} href={`/category/${tab.toLowerCase()}`} onClick={() => setSidebarOpen(false)} className="text-xl font-bold text-gray-900 dark:text-white hover:text-[#C8102E] transition-colors">
-              {tab}
-            </Link>
-          ))}
-        </div>
-      </div>
+        <div className="hidden md:block w-1/3"></div>
 
-      <div className="w-full bg-black text-white py-1.5 px-4 text-xs font-bold tracking-widest flex items-center overflow-hidden ticker-container relative z-50 border-b border-gray-900">
-        <div className="flex items-center gap-2 mr-4 flex-shrink-0 z-10 bg-black pr-2">
-          <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C8102E] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C8102E]"></span>
-          </span>
-          <span className="uppercase text-[#C8102E]">Breaking</span>
-        </div>
-        
-        {/* 🚀 SINGLE LINE SCROLL CONTAINER */}
-        <div className="flex-1 overflow-hidden relative">
-          <div className="animate-ticker text-white/90 uppercase">
-            <span className="pr-12 inline-block">{safeTickerText}</span>
-            <span className="pr-12 inline-block">{safeTickerText}</span>
-            <span className="pr-12 inline-block">{safeTickerText}</span>
-          </div>
-        </div>
-        
-        <div className="hidden md:flex gap-6 text-white/80 ml-4 flex-shrink-0 z-10 bg-black pl-2 border-l border-gray-800">
-          <Link href="/login" className="hover:text-[#C8102E] transition-colors">SIGN IN</Link>
-          <Link href="/subscribe" className="hover:text-[#C8102E] transition-colors">SUBSCRIBE</Link>
-        </div>
-      </div>
+        {/* Center: Premium Logo */}
+        <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex flex-col items-center justify-center w-1/3 group">
+          <img 
+            src="/geotrexx-logo.png" 
+            alt="GEOTREXX" 
+            className="h-14 w-14 md:h-20 md:w-20 object-cover rounded-full border-2 border-gray-200 dark:border-gray-800 block group-hover:scale-105 group-hover:border-[#C8102E] transition-all duration-300 drop-shadow-md"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+          <h1 className="hidden text-3xl md:text-5xl font-black tracking-tighter text-gray-900 dark:text-white leading-none group-hover:scale-105 transition-transform duration-300">
+            GEO<span className="text-[#C8102E]">TREXX</span>
+          </h1>
+        </Link>
 
-      <header className="sticky top-0 z-50 w-full bg-[#C8102E] dark:bg-[#0a0b10] border-t-0 dark:border-t-[4px] dark:border-[#C8102E] shadow-md transition-colors duration-300">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex-1">
-            <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-white hover:text-white/80 dark:text-white dark:hover:text-[#C8102E] transition-colors flex items-center gap-2 font-bold uppercase text-sm tracking-widest">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-              <span className="hidden md:block">Menu</span>
+        {/* Right: Actions */}
+        <div className="flex items-center justify-end space-x-4 md:space-x-6 w-1/3">
+          {mounted && (
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+              className="text-gray-900 dark:text-white hover:text-[#C8102E] dark:hover:text-[#C8102E] transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Toggle Dark Mode"
+            >
+              {theme === 'dark' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+              )}
             </button>
-          </div>
-          <div className="flex-1 flex justify-center">
-            <Link href="/" className="block group">
-              <img src="/geotrexx-logo.png" alt="GEOTREXX Logo" className="h-12 w-12 md:h-14 md:w-14 object-cover rounded-full shadow-lg bg-white p-1 group-hover:opacity-90 transition-opacity border-2 border-white/20 dark:border-none" />
-            </Link>
-          </div>
-          <div className="flex-1 flex justify-end items-center gap-4 text-white">
-            <Link href="/search" className="p-2 text-white hover:text-white/80 dark:text-white dark:hover:text-[#C8102E] hover:bg-white/10 dark:hover:bg-gray-800 rounded-full transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </Link>
-            <ThemeToggle />
-          </div>
-        </div>
-
-        <div className="w-full bg-[#C8102E] dark:bg-[#0a0b10] border-t border-white/20 dark:border-gray-900 hidden md:block overflow-x-auto shadow-sm transition-colors duration-300">
-          <div className="max-w-[1400px] mx-auto px-4 flex justify-center gap-10 py-3">
-            {tabs.map((tab) => (
-              <Link key={tab} href={`/category/${tab.toLowerCase()}`} className="text-xs font-black uppercase tracking-widest text-white hover:text-gray-200 dark:text-gray-400 dark:hover:text-[#C8102E] transition-colors relative group py-1">
-                {tab}
-                <span className="absolute -bottom-1 left-0 w-0 h-[3px] bg-white dark:bg-[#C8102E] transition-all group-hover:w-full"></span>
-              </Link>
-            ))}
-          </div>
+          )}
         </div>
       </header>
-    </>
-  )
+
+      {/* 3. DESKTOP MEGA-MENU */}
+      <nav className="w-full bg-gray-100 dark:bg-[#1a1b23] border-b border-gray-200 dark:border-gray-800 transition-colors hidden md:block shadow-sm z-20">
+        <ul className="flex justify-center space-x-8 text-xs font-bold tracking-[0.15em] text-gray-900 dark:text-gray-300 uppercase">
+          {navLinks.map((link) => (
+            <li key={link.name} className="relative group py-4">
+              <Link href={link.path} className="hover:text-[#C8102E] dark:hover:text-[#C8102E] transition-colors pb-4">
+                {link.name}
+              </Link>
+              
+              {link.sub && (
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-0 hidden group-hover:block bg-white dark:bg-[#0a0b10] shadow-xl border border-gray-200 dark:border-gray-800 rounded-b-lg py-2 w-48 z-50">
+                  {link.sub.map((subItem) => {
+                    const formatPath = subItem.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-');
+                    return (
+                      <Link 
+                        key={subItem} 
+                        href={`${link.path}/${formatPath}`}
+                        className="block px-4 py-2.5 text-[10px] tracking-widest text-gray-700 dark:text-gray-400 hover:text-[#C8102E] dark:hover:text-[#C8102E] hover:bg-gray-50 dark:hover:bg-[#1a1b23] transition-colors"
+                      >
+                        {subItem}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      {/* 4. FULLSCREEN MOBILE OVERLAY */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 top-[116px] md:top-[136px] bg-white dark:bg-[#0a0b10] z-40 overflow-y-auto pb-32 border-t border-gray-200 dark:border-gray-800 transition-all">
+          <ul className="flex flex-col py-6 px-6 space-y-6 text-sm font-bold tracking-widest text-gray-900 dark:text-white uppercase">
+            {navLinks.map((link) => (
+              <li key={link.name} className="border-b border-gray-100 dark:border-gray-800 pb-6">
+                <Link href={link.path} onClick={() => setMobileMenuOpen(false)} className="block text-xl hover:text-[#C8102E] transition-colors">
+                  {link.name}
+                </Link>
+                {link.sub && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {link.sub.map((subItem) => {
+                      const formatPath = subItem.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-');
+                      return (
+                        <Link 
+                          key={subItem}
+                          href={`${link.path}/${formatPath}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="text-[10px] bg-gray-100 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 px-3 py-2 rounded-md hover:border-[#C8102E] hover:text-[#C8102E] transition-colors"
+                        >
+                          {subItem}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
