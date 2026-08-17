@@ -1,12 +1,12 @@
 export const metadata = {
-  title: 'GEOTREXX Newsroom | Sanity Studio',
-  description: 'Backend newsroom management.',
+  title: 'GEOTREXX Studio',
+  description: 'Sanity Studio',
 }
 
-export default function StudioLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ margin: 0, padding: 0, minHeight: '100vh' }}>
-      {children}
-    </div>
+    <html lang="en">
+      <body>{children}</body>
+    </html>
   )
 }

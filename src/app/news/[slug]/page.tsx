@@ -6,12 +6,16 @@ import { PortableText } from '@portabletext/react'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
+// 1. DYNAMIC METADATA (Social Media Previews)
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
-  // Strictly grabs the newest published "post" to ignore old ghost files
   const post = await client.fetch(
-    `*[_type == "post" && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]`,
+    `*[_type == "post" && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
+      title,
+      "summary": coalesce(summary, description, "Read the full story on GEOTREXX."),
+      "mainImage": coalesce(mainImage, image, coverImage)
+    }`,
     { slug }
   )
 
@@ -21,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   return {
     title: `${post.title} | GEOTREXX`,
-    description: 'Read the full story on GEOTREXX.',
+    description: post.summary,
     openGraph: {
       title: post.title,
       images: post.mainImage ? [{ url: urlFor(post.mainImage).width(1200).height(630).url() }] : [],
@@ -29,17 +33,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
+// 2. MAIN ARTICLE PAGE & RAW DATA DUMP
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
-  // Strictly grabs the newest published "post" and asks for exact reference data
+  // We fetch EVERYTHING (...) so we can see the exact field names in the diagnostic dump
   const post = await client.fetch(
     `*[_type == "post" && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
-      title,
-      body,
-      publishedAt,
-      mainImage,
-      category,
+      ...,
       "authorName": author->name,
       "authorImage": author->image
     }`,
@@ -53,8 +54,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   return (
     <main className="max-w-4xl mx-auto px-4 py-10">
       <article>
-        
-        {/* Category */}
+        {/* Category Label */}
         {post.category && (
           <div className="text-center mb-4">
             <span className="text-red-600 font-bold uppercase tracking-wider text-sm">
@@ -68,7 +68,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           {post.title}
         </h1>
 
-        {/* Author */}
+        {/* Author / Date */}
         <div className="flex items-center justify-center gap-3 mb-10">
           {post.authorImage && (
             <Image
@@ -96,7 +96,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
 
-        {/* Main Image */}
+        {/* Featured Image */}
         {post.mainImage && (
           <div className="mb-10 w-full relative h-[400px] md:h-[500px]">
             <Image
@@ -109,12 +109,20 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         )}
 
-        {/* Body */}
+        {/* Body Text */}
         <div className="prose prose-lg max-w-none prose-slate mx-auto">
           {post.body ? <PortableText value={post.body} /> : null}
         </div>
-
       </article>
+
+      {/* --- DEVELOPER DIAGNOSTIC DUMP --- */}
+      <div className="mt-20 bg-slate-900 text-green-400 p-6 rounded-lg overflow-x-auto font-mono text-xs border border-red-500">
+        <h2 className="text-white mb-4 text-lg font-bold">🛠️ DIAGNOSTIC DUMP</h2>
+        <p className="text-slate-400 mb-4">
+          Please copy this green text and paste it back into the chat. It shows exactly how your database is structured.
+        </p>
+        <pre>{JSON.stringify(post, null, 2)}</pre>
+      </div>
     </main>
   )
 }
