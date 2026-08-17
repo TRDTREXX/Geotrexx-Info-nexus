@@ -1,126 +1,112 @@
-import { createClient } from '@sanity/client';
-import { notFound } from 'next/navigation';
+import { client } from '../../../../sanity/lib/client'
+import { urlFor } from '../../../../sanity/lib/image'
+import { PortableText } from '@portabletext/react'
+import Image from 'next/image'
+import { notFound } from 'next/navigation'
 
-const client = createClient({
-  projectId: 'x0tpoga9',
-  dataset: 'production',
-  useCdn: false,
-  apiVersion: '2024-03-01',
-});
+// 1. DYNAMIC METADATA (For Facebook/X Link Previews)
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const post = await client.fetch(`*[_type == "post" && slug.current == $slug][0]`, { slug: params.slug })
 
-export const revalidate = 10;
-
-const CATEGORY_MATRIX = {
-  SPORTS: ['sport', 'football', 'soccer', 'xavi', 'barcelona', 'madrid', 'chelsea', 'arsenal', 'coach', 'stadium', 'match', 'tournament', 'fifa', 'uefa', 'nba', 'basketball', 'tennis', 'transfer', 'premier league', 'black stars', 'la liga', 'athletics'],
-  POLITICS: ['politic', 'minister', 'president', 'election', 'government', 'npp', 'ndc', 'parliament', 'mps', 'vote', 'policy', 'campaign', 'mahama', 'bawumia', 'akufo-addo', 'diplomat'],
-  BUSINESS: ['business', 'econom', 'market', 'bank', 'finance', 'cedi', 'dollar', 'inflation', 'trade', 'investment', 'imf', 'debt', 'revenue', 'tax', 'corporate', 'industry'],
-  STEM: ['stem', 'science', 'tech', 'ai', 'artificial intelligence', 'innovation', 'engineering', 'math', 'software', 'app', 'digital', 'cyber', 'robot', 'space', 'elon', 'musk', 'tesla', 'spacex', 'trillionaire'],
-  ENTERTAINMENT: ['entertain', 'music', 'movie', 'film', 'celebrity', 'actor', 'actress', 'singer', 'concert', 'album', 'award', 'hollywood', 'lifestyle', 'artist', 'mrbeast', 'mr beast', 'youtube', 'married', 'marriage', 'wedding']
-};
-
-function determineCategory(article: any) {
-  if (article.legacyCategory) {
-    const exactCat = article.legacyCategory.toLowerCase().trim();
-    if (['sports', 'politics', 'business', 'stem', 'entertainment', 'world'].includes(exactCat)) {
-      return exactCat.toUpperCase();
-    }
+  if (!post) {
+    return {}
   }
 
-  const textToScan = `${article.legacyCategory || ''} ${article.category || ''} ${article.title || ''} ${article.summary || ''}`.toLowerCase();
-
-  for (const [categoryName, keywords] of Object.entries(CATEGORY_MATRIX)) {
-    if (keywords.some(keyword => {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
-      return regex.test(textToScan);
-    })) {
-      return categoryName;
-    }
+  return {
+    title: `${post.title} | GEOTREXX`,
+    description: "Read the full story on GEOTREXX Info Nexus.",
+    openGraph: {
+      title: post.title,
+      images: post.mainImage ? [
+        {
+          url: urlFor(post.mainImage).width(1200).height(630).url(),
+          width: 1200,
+          height: 630,
+        },
+      ] : [],
+    },
   }
-
-  return 'GHANA';
 }
 
-export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
-  const resolvedParams = await params;
-  const slug = resolvedParams.slug;
+// 2. MAIN PAGE COMPONENT
+export default async function ArticlePage({ params }: { params: { slug: string } }) {
+  // Fetch the full article including the category and author data from Sanity
+  const post = await client.fetch(`*[_type == "post" && slug.current == $slug][0]{
+    title,
+    body,
+    publishedAt,
+    mainImage,
+    category,
+    "authorName": author->name,
+    "authorImage": author->image
+  }`, { slug: params.slug })
 
-  const article = await client.fetch(`
-    *[_type == "article" && slug.current == $slug][0]{
-      title,
-      publishedAt,
-      "imageUrl": mainImage.asset->url,
-      legacyCategory,
-      category,
-      content,
-      "authorNameRef": author->name,
-      "authorImageRef": author->image.asset->url,
-      authorName,
-      author
-    }
-  `, { slug: slug });
-
-  if (!article) return notFound();
-
-  const mappedCategory = determineCategory(article);
-  
-  const finalAuthor = article.authorNameRef || article.authorName || article.author || 'Orpheus Grant-Essilfie';
-  
-  let finalAuthorImage = article.authorImageRef;
-  if (!finalAuthorImage) {
-    if (finalAuthor.includes('Orpheus')) finalAuthorImage = '/orpheus.png.JPG';
-    else if (finalAuthor.includes('Quist')) finalAuthorImage = '/quist.png.jpeg';
+  // If the article doesn't exist, show a 404 page
+  if (!post) {
+    notFound()
   }
 
-  const date = new Date(article.publishedAt).toLocaleDateString('en-US', {
-    month: 'long', day: 'numeric', year: 'numeric'
-  });
-
   return (
-    <main className="max-w-4xl mx-auto px-4 py-12">
+    <main className="max-w-4xl mx-auto px-4 py-10">
       <article>
-        <header className="mb-10 text-center">
-          <div className="text-sm font-black text-[#C8102E] uppercase tracking-widest mb-4">
-            {mappedCategory}
-          </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 dark:text-white mb-8 leading-tight">
-            {article.title}
-          </h1>
-          
-          <div className="flex items-center justify-center space-x-4 mb-6">
-            <div className="w-12 h-12 rounded-full border-2 border-gray-200 dark:border-gray-800 overflow-hidden bg-gray-100 flex items-center justify-center shrink-0">
-               {finalAuthorImage ? (
-                 <img src={finalAuthorImage} alt={finalAuthor} className="w-full h-full object-cover" />
-               ) : (
-                 <span className="text-[#C8102E] font-black text-lg">
-                   {finalAuthor.charAt(0).toUpperCase()}
-                 </span>
-               )}
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
-                By {finalAuthor}
-              </p>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{date}</p>
-            </div>
-          </div>
-        </header>
+        
+        {/* DYNAMIC CATEGORY FIX (Replaces the hardcoded "GHANA") */}
+        <div className="text-center mb-4">
+          <span className="text-red-600 font-bold uppercase tracking-wider text-sm">
+            {post.category || 'News'}
+          </span>
+        </div>
 
-        {article.imageUrl && (
-          <div className="w-full mb-12 overflow-hidden rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
-            <img src={article.imageUrl} alt={article.title} className="w-full h-auto object-cover" />
+        {/* TITLE */}
+        <h1 className="text-4xl md:text-5xl font-black text-center text-slate-900 mb-8 leading-tight">
+          {post.title}
+        </h1>
+
+        {/* AUTHOR BLOCK */}
+        <div className="flex items-center justify-center gap-3 mb-10">
+          {post.authorImage && (
+            <Image
+              src={urlFor(post.authorImage).width(50).height(50).url()}
+              alt={post.authorName || 'Author'}
+              width={50}
+              height={50}
+              className="rounded-full bg-gray-200"
+            />
+          )}
+          <div className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+            BY {post.authorName || 'GEOTREXX'}
+            <br />
+            {post.publishedAt && (
+              <span className="text-gray-500 font-normal">
+                {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* MAIN COVER IMAGE */}
+        {post.mainImage && (
+          <div className="mb-10 w-full relative h-[400px] md:h-[500px]">
+            <Image
+              src={urlFor(post.mainImage).url()}
+              alt={post.title}
+              fill
+              className="object-cover rounded-lg"
+              priority
+            />
           </div>
         )}
 
-        <div className="prose prose-lg md:prose-xl dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 font-serif">
-          {article.content?.map((block: any, index: number) => {
-            if (block._type === 'block') {
-              const text = block.children.map((child: any) => child.text).join('');
-              return <p key={index} className="mb-6 leading-relaxed">{text}</p>;
-            }
-            return null;
-          })}
+        {/* ARTICLE BODY / CONTENT */}
+        <div className="prose prose-lg max-w-none prose-slate">
+          {post.body ? <PortableText value={post.body} /> : null}
         </div>
+
       </article>
     </main>
-  );
+  )
 }
