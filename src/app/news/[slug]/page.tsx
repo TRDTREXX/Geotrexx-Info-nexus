@@ -5,8 +5,11 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
 // 1. DYNAMIC METADATA (For Facebook/X Link Previews)
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const post = await client.fetch(`*[_type == "post" && slug.current == $slug][0]`, { slug: params.slug })
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  // Await the params before using the slug!
+  const { slug } = await params
+
+  const post = await client.fetch(`*[_type == "post" && slug.current == $slug][0]`, { slug })
 
   if (!post) {
     return {}
@@ -29,7 +32,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 // 2. MAIN PAGE COMPONENT
-export default async function ArticlePage({ params }: { params: { slug: string } }) {
+export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+  // Await the params before using the slug!
+  const { slug } = await params
+
   // Fetch the full article including the category and author data from Sanity
   const post = await client.fetch(`*[_type == "post" && slug.current == $slug][0]{
     title,
@@ -39,7 +45,7 @@ export default async function ArticlePage({ params }: { params: { slug: string }
     category,
     "authorName": author->name,
     "authorImage": author->image
-  }`, { slug: params.slug })
+  }`, { slug })
 
   // If the article doesn't exist, show a 404 page
   if (!post) {
