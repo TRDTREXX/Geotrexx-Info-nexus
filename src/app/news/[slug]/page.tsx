@@ -1,5 +1,5 @@
-import { client } from '../../../../sanity/lib/client'
-import { urlFor } from '../../../../sanity/lib/image'
+import { client } from '../../../sanity/lib/client'
+import { urlFor } from '../../../sanity/lib/image'
 import { PortableText } from '@portabletext/react'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
@@ -50,7 +50,7 @@ export default async function ArticlePage({ params }: { params: { slug: string }
     <main className="max-w-4xl mx-auto px-4 py-10">
       <article>
         
-        {/* DYNAMIC CATEGORY FIX (Replaces the hardcoded "GHANA") */}
+        {/* DYNAMIC CATEGORY FIX */}
         <div className="text-center mb-4">
           <span className="text-red-600 font-bold uppercase tracking-wider text-sm">
             {post.category || 'News'}
