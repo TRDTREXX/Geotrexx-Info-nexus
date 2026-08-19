@@ -25,12 +25,15 @@ export default {
       type: 'text',
       description: 'Short snippet used for the article intro and social media links',
     },
+    
+    // 1. THE AUTHOR DROPDOWN
     {
       name: 'author',
       title: 'Author',
       type: 'reference',
       to: { type: 'author' },
     },
+    
     {
       name: 'mainImage',
       title: 'Main image',
@@ -39,9 +42,11 @@ export default {
         hotspot: true,
       },
     },
+    
+    // 2. THE SECTION DROPDOWN
     {
       name: 'category',
-      title: 'Category',
+      title: 'Section',
       type: 'string',
       options: {
         list: [
@@ -59,6 +64,8 @@ export default {
         layout: 'dropdown',
       },
     },
+
+    // 3. THE SUBSECTION DROPDOWN
     {
       name: 'subsection',
       title: 'Subsection (Optional)',
@@ -73,6 +80,7 @@ export default {
         layout: 'dropdown',
       },
     },
+    
     {
       name: 'publishedAt',
       title: 'Published at',
@@ -84,24 +92,28 @@ export default {
       type: 'array',
       of: [{ type: 'block' }, { type: 'image' }],
     },
-    // --- LEGACY MIGRATION FIELDS (Fixes the "Unknown Fields" warning) ---
+
+    // --- LEGACY MIGRATION FIELDS (Hidden from UI but keeps data safe) ---
     {
       name: 'content',
       title: 'Legacy Content (Migrated)',
       type: 'array',
       of: [{ type: 'block' }, { type: 'image' }],
+      hidden: true,
     },
     {
       name: 'editorialCategory',
       title: 'Legacy Editorial Category',
       type: 'reference',
-      to: [{ type: 'author' }], // Weak reference to prevent crashing from lost document types
+      to: [{ type: 'author' }], 
       weak: true,
+      hidden: true,
     },
     {
       name: 'oldHygraphCategory',
       title: 'Old Hygraph Category',
       type: 'string',
+      hidden: true,
     },
   ],
 }
