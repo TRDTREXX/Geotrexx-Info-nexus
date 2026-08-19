@@ -39,9 +39,11 @@ export default {
         hotspot: true,
       },
     },
+    
+    // --- MAIN SECTIONS ---
     {
       name: 'category',
-      title: 'Section',
+      title: 'Main Section',
       type: 'string',
       options: {
         list: [
@@ -49,8 +51,6 @@ export default {
           { title: 'Politics', value: 'politics' },
           { title: 'Business', value: 'business' },
           { title: 'Sports', value: 'sports' },
-          { title: 'Football', value: 'football' },
-          { title: 'Transfers', value: 'transfers' },
           { title: 'STEM', value: 'stem' },
           { title: 'Entertainment', value: 'entertainment' },
           { title: 'World', value: 'world' },
@@ -59,25 +59,73 @@ export default {
         layout: 'dropdown',
       },
     },
+    
+    // --- SUBSECTIONS (Fully Mapped to GEOTREXX Navigation) ---
     {
       name: 'subsection',
       title: 'Subsection',
       type: 'string',
+      // Stays hidden until a Main Section is selected
       hidden: ({ document }) => !document?.category, 
       options: {
         list: [
-          { title: 'Sports: Match Reports', value: 'match-reports' },
-          { title: 'Sports: Transfers & Rumors', value: 'transfers' },
-          { title: 'Sports: Editorials', value: 'sports-editorials' },
-          { title: 'Politics: Local News', value: 'local-news' },
-          { title: 'Politics: International', value: 'international' },
-          { title: 'Politics: Editorials', value: 'politics-editorials' },
+          // POLITICS
+          { title: 'Politics: Ghana Politics', value: 'ghana-politics' },
+          { title: 'Politics: Government', value: 'government' },
+          { title: 'Politics: Parliament', value: 'parliament' },
+          { title: 'Politics: Elections', value: 'elections' },
+          { title: 'Politics: Political Analysis', value: 'political-analysis' },
+          
+          // SPORTS
+          { title: 'Sports: Football', value: 'football' },
+          { title: 'Sports: Transfers', value: 'transfers' },
+          { title: 'Sports: Basketball', value: 'basketball' },
+          { title: 'Sports: Tennis', value: 'tennis' },
+          { title: 'Sports: Boxing', value: 'boxing' },
+          { title: 'Sports: Athletics', value: 'athletics' },
+          { title: 'Sports: Motorsport', value: 'motorsport' },
+
+          // STEM
+          { title: 'STEM: Science', value: 'science' },
+          { title: 'STEM: Technology', value: 'technology' },
+          { title: 'STEM: Engineering', value: 'engineering' },
+          { title: 'STEM: Mathematics', value: 'mathematics' },
+          { title: 'STEM: AI', value: 'ai' },
+          { title: 'STEM: Innovation', value: 'innovation' },
+          { title: 'STEM: Space', value: 'space' },
+
+          // ENTERTAINMENT
+          { title: 'Entertainment: Music', value: 'music' },
+          { title: 'Entertainment: Movies & TV', value: 'movies-tv' },
           { title: 'Entertainment: Celebrity', value: 'celebrity' },
-          { title: 'Entertainment: Music & Film', value: 'music-film' },
+          { title: 'Entertainment: Arts', value: 'arts' },
+          { title: 'Entertainment: Lifestyle', value: 'lifestyle' },
+
+          // WORLD
+          { title: 'World: Africa', value: 'africa' },
+          { title: 'World: Europe', value: 'europe' },
+          { title: 'World: Americas', value: 'americas' },
+          { title: 'World: Asia', value: 'asia' },
+          { title: 'World: Middle East', value: 'middle-east' },
+          { title: 'World: International', value: 'international' },
+
+          // OPINION
+          { title: 'Opinion: Editorial', value: 'editorial' },
+          { title: 'Opinion: Analysis', value: 'analysis' },
+          { title: 'Opinion: Commentary', value: 'commentary' },
+          { title: 'Opinion: Columns', value: 'columns' },
+          
+          // GHANA & BUSINESS (Basic fallbacks to ensure full coverage)
+          { title: 'Ghana: Local News', value: 'local-news' },
+          { title: 'Ghana: National', value: 'national' },
+          { title: 'Business: Finance', value: 'finance' },
+          { title: 'Business: Economy', value: 'economy' },
+          { title: 'Business: Markets', value: 'markets' },
         ],
         layout: 'dropdown',
       },
     },
+    
     {
       name: 'publishedAt',
       title: 'Published at',
@@ -89,9 +137,11 @@ export default {
       type: 'array',
       of: [{ type: 'block' }, { type: 'image' }],
     },
+
+    // --- LEGACY MIGRATION FIELDS (Force Hidden from UI) ---
     {
       name: 'content',
-      title: 'Legacy Content (Migrated)',
+      title: 'Legacy Content',
       type: 'array',
       of: [{ type: 'block' }, { type: 'image' }],
       hidden: () => true,
