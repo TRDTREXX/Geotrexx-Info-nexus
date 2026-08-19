@@ -1,8 +1,9 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-import { client } from '@/sanity/lib/client'
-import { urlFor } from '@/sanity/lib/image'
+// Switched back to exact relative paths to fix the Vercel build error
+import { client } from '../../../../sanity/lib/client'
+import { urlFor } from '../../../../sanity/lib/image'
 import Image from 'next/image'
 import Link from 'next/link'
 
