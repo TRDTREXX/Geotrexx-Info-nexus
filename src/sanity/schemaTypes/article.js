@@ -25,15 +25,12 @@ export default {
       type: 'text',
       description: 'Short snippet used for the article intro and social media links',
     },
-    
-    // 1. THE AUTHOR DROPDOWN
     {
       name: 'author',
       title: 'Author',
       type: 'reference',
       to: { type: 'author' },
     },
-    
     {
       name: 'mainImage',
       title: 'Main image',
@@ -42,8 +39,6 @@ export default {
         hotspot: true,
       },
     },
-    
-    // 2. THE SECTION DROPDOWN
     {
       name: 'category',
       title: 'Section',
@@ -64,8 +59,6 @@ export default {
         layout: 'dropdown',
       },
     },
-
-    // 3. THE SUBSECTION DROPDOWN
     {
       name: 'subsection',
       title: 'Subsection (Optional)',
@@ -80,7 +73,6 @@ export default {
         layout: 'dropdown',
       },
     },
-    
     {
       name: 'publishedAt',
       title: 'Published at',
@@ -93,7 +85,7 @@ export default {
       of: [{ type: 'block' }, { type: 'image' }],
     },
 
-    // --- LEGACY MIGRATION FIELDS (Force Hidden from UI to clear clutter) ---
+    // --- LEGACY MIGRATION FIELDS (Force Hidden from UI) ---
     {
       name: 'content',
       title: 'Legacy Content (Migrated)',
