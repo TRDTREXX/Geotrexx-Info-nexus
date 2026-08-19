@@ -93,13 +93,13 @@ export default {
       of: [{ type: 'block' }, { type: 'image' }],
     },
 
-    // --- LEGACY MIGRATION FIELDS (Hidden from UI but keeps data safe) ---
+    // --- LEGACY MIGRATION FIELDS (Force Hidden from UI to clear clutter) ---
     {
       name: 'content',
       title: 'Legacy Content (Migrated)',
       type: 'array',
       of: [{ type: 'block' }, { type: 'image' }],
-      hidden: true,
+      hidden: () => true,
     },
     {
       name: 'editorialCategory',
@@ -107,13 +107,13 @@ export default {
       type: 'reference',
       to: [{ type: 'author' }], 
       weak: true,
-      hidden: true,
+      hidden: () => true,
     },
     {
       name: 'oldHygraphCategory',
       title: 'Old Hygraph Category',
       type: 'string',
-      hidden: true,
+      hidden: () => true,
     },
   ],
 }
