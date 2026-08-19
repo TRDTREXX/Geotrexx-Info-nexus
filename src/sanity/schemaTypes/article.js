@@ -29,7 +29,7 @@ export default {
       name: 'author',
       title: 'Author',
       type: 'reference',
-      to: { type: 'author' },
+      to: [{ type: 'author' }],
     },
     {
       name: 'mainImage',
@@ -61,14 +61,19 @@ export default {
     },
     {
       name: 'subsection',
-      title: 'Subsection (Optional)',
+      title: 'Subsection',
       type: 'string',
+      hidden: ({ document }) => !document?.category, 
       options: {
         list: [
-          { title: 'Local News', value: 'local-news' },
-          { title: 'International', value: 'international' },
-          { title: 'Match Reports', value: 'match-reports' },
-          { title: 'Editorials', value: 'editorials' },
+          { title: 'Sports: Match Reports', value: 'match-reports' },
+          { title: 'Sports: Transfers & Rumors', value: 'transfers' },
+          { title: 'Sports: Editorials', value: 'sports-editorials' },
+          { title: 'Politics: Local News', value: 'local-news' },
+          { title: 'Politics: International', value: 'international' },
+          { title: 'Politics: Editorials', value: 'politics-editorials' },
+          { title: 'Entertainment: Celebrity', value: 'celebrity' },
+          { title: 'Entertainment: Music & Film', value: 'music-film' },
         ],
         layout: 'dropdown',
       },
@@ -84,8 +89,6 @@ export default {
       type: 'array',
       of: [{ type: 'block' }, { type: 'image' }],
     },
-
-    // --- LEGACY MIGRATION FIELDS (Force Hidden from UI) ---
     {
       name: 'content',
       title: 'Legacy Content (Migrated)',

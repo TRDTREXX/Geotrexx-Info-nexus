@@ -7,12 +7,10 @@ import { PortableText, PortableTextComponents } from '@portabletext/react'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
-// 1. PREMIUM SOCIAL MEDIA METADATA
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-
   const post = await client.fetch(
-    `*[_type in ["post", "article", "news"] && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
+    `*[_type in ["post", "article", "news"] && slug.current == $slug][0]{
       title,
       "summary": coalesce(summary, description, "Read the full story on GEOTREXX."),
       "mainImage": coalesce(mainImage, image, coverImage)
@@ -20,9 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     { slug },
     { cache: 'no-store' }
   )
-
   if (!post) return { title: 'Article Not Found | GEOTREXX' }
-
   return {
     title: `${post.title} | GEOTREXX`,
     description: post.summary,
@@ -32,17 +28,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       url: `https://www.geotrexx.com/news/${slug}`, 
       images: post.mainImage?.asset ? [{ url: urlFor(post.mainImage).width(1200).height(630).url() }] : [],
       type: 'article',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: post.title,
-      description: post.summary,
-      images: post.mainImage?.asset ? [urlFor(post.mainImage).width(1200).height(630).url()] : [],
-    },
+    }
   }
 }
 
-// 2. PREMIUM TYPOGRAPHY STYLING
 const RichTextComponents: PortableTextComponents = {
   block: {
     normal: ({ children }) => <p className="mb-6 leading-relaxed text-gray-800 dark:text-gray-200 text-lg md:text-xl font-serif">{children}</p>,
@@ -61,26 +50,22 @@ const RichTextComponents: PortableTextComponents = {
   },
 }
 
-// 3. MAIN ARTICLE PAGE UI
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
-  // MULTI-TARGET AUTHOR FETCH: Scans all possible fields where your name/picture might live
   const post = await client.fetch(
-    `*[_type in ["post", "article", "news"] && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
+    `*[_type in ["post", "article", "news"] && slug.current == $slug][0]{
       ...,
       "body": coalesce(body, content, text),
       "summaryText": coalesce(summary, description),
-      "authorName": coalesce(author->name, writer->name, byline, authorName, "GEOTREXX MEDIA GROUP"),
-      "authorImage": coalesce(author->image, writer->image, authorImage)
+      "authorName": author->name,
+      "authorImageUrl": author->image.asset->url
     }`,
     { slug },
     { cache: 'no-store' }
   )
 
-  if (!post) {
-    notFound()
-  }
+  if (!post) notFound()
 
   const finalAuthorName = post.authorName || "GEOTREXX MEDIA GROUP"
 
@@ -88,7 +73,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     <main className="w-full bg-white dark:bg-[#0a0b10] min-h-screen">
       <article className="max-w-4xl mx-auto px-4 py-12 md:py-16">
         
-        {/* Header: Category & Title */}
         <header className="max-w-3xl mx-auto mb-10">
           {post.category && (
             <div className="flex items-center space-x-2 mb-4">
@@ -99,23 +83,20 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             </div>
           )}
           
-          {/* THE "FIRE" GRADIENT HEADING */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-gray-900 via-gray-800 to-gray-500 dark:from-white dark:via-gray-100 dark:to-gray-500 leading-[1.05] tracking-tighter mb-6 drop-shadow-sm">
             {post.title}
           </h1>
 
-          {/* Premium Journalistic Summary / Lead */}
           {post.summaryText && (
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 font-medium mb-8 leading-snug">
               {post.summaryText}
             </p>
           )}
           
-          {/* Elite Author Block */}
           <div className="flex items-center space-x-4 border-t border-b border-gray-200 dark:border-gray-800 py-4 mb-8">
-            {post.authorImage?.asset ? (
+            {post.authorImageUrl ? (
               <Image
-                src={urlFor(post.authorImage).width(60).height(60).url()}
+                src={post.authorImageUrl}
                 alt={finalAuthorName}
                 width={48}
                 height={48}
@@ -139,7 +120,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         </header>
 
-        {/* Premium Hero Image */}
         {post.mainImage?.asset && (
           <div className="w-full relative aspect-[16/9] mb-12 bg-gray-100 dark:bg-[#111] rounded-sm overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm">
             <Image
@@ -153,7 +133,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         )}
 
-        {/* The Story / Body Text */}
         <div className="max-w-3xl mx-auto">
           {post.body ? (
             <PortableText value={post.body} components={RichTextComponents} />
@@ -161,7 +140,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             <p className="text-gray-500 italic">Story content is being updated.</p>
           )}
         </div>
-        
       </article>
     </main>
   )
