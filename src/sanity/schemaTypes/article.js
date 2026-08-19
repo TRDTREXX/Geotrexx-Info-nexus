@@ -84,5 +84,24 @@ export default {
       type: 'array',
       of: [{ type: 'block' }, { type: 'image' }],
     },
+    // --- LEGACY MIGRATION FIELDS (Fixes the "Unknown Fields" warning) ---
+    {
+      name: 'content',
+      title: 'Legacy Content (Migrated)',
+      type: 'array',
+      of: [{ type: 'block' }, { type: 'image' }],
+    },
+    {
+      name: 'editorialCategory',
+      title: 'Legacy Editorial Category',
+      type: 'reference',
+      to: [{ type: 'author' }], // Weak reference to prevent crashing from lost document types
+      weak: true,
+    },
+    {
+      name: 'oldHygraphCategory',
+      title: 'Old Hygraph Category',
+      type: 'string',
+    },
   ],
 }
