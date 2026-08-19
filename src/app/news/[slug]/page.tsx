@@ -1,128 +1,168 @@
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 import { client } from '../../../sanity/lib/client'
 import { urlFor } from '../../../sanity/lib/image'
-import { PortableText } from '@portabletext/react'
+import { PortableText, PortableTextComponents } from '@portabletext/react'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
-// 1. DYNAMIC METADATA (Social Media Previews)
+// 1. PREMIUM SOCIAL MEDIA METADATA
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
   const post = await client.fetch(
-    `*[_type == "post" && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
+    `*[_type in ["post", "article", "news"] && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
       title,
       "summary": coalesce(summary, description, "Read the full story on GEOTREXX."),
       "mainImage": coalesce(mainImage, image, coverImage)
     }`,
-    { slug }
+    { slug },
+    { cache: 'no-store' }
   )
 
-  if (!post) {
-    return { title: 'Article Not Found | GEOTREXX' }
-  }
+  if (!post) return { title: 'Article Not Found | GEOTREXX' }
 
   return {
     title: `${post.title} | GEOTREXX`,
     description: post.summary,
     openGraph: {
       title: post.title,
-      images: post.mainImage ? [{ url: urlFor(post.mainImage).width(1200).height(630).url() }] : [],
+      description: post.summary,
+      url: `https://www.geotrexx.com/news/${slug}`, 
+      images: post.mainImage?.asset ? [{ url: urlFor(post.mainImage).width(1200).height(630).url() }] : [],
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.summary,
+      images: post.mainImage?.asset ? [urlFor(post.mainImage).width(1200).height(630).url()] : [],
     },
   }
 }
 
-// 2. MAIN ARTICLE PAGE & RAW DATA DUMP
+// 2. PREMIUM TYPOGRAPHY STYLING
+const RichTextComponents: PortableTextComponents = {
+  block: {
+    normal: ({ children }) => <p className="mb-6 leading-relaxed text-gray-800 dark:text-gray-200 text-lg md:text-xl font-serif">{children}</p>,
+    h1: ({ children }) => <h1 className="text-3xl md:text-4xl font-black mt-12 mb-6 text-black dark:text-white tracking-tight">{children}</h1>,
+    h2: ({ children }) => <h2 className="text-2xl md:text-3xl font-black mt-10 mb-4 text-black dark:text-white tracking-tight">{children}</h2>,
+    h3: ({ children }) => <h3 className="text-xl md:text-2xl font-bold mt-8 mb-4 text-black dark:text-white">{children}</h3>,
+    blockquote: ({ children }) => (
+      <blockquote className="border-l-4 border-[#dc143c] pl-6 my-8 italic text-xl md:text-2xl font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-[#111] py-6 pr-6 shadow-sm">
+        {children}
+      </blockquote>
+    ),
+  },
+  list: {
+    bullet: ({ children }) => <ul className="ml-6 mb-6 list-disc space-y-2 text-lg md:text-xl text-gray-800 dark:text-gray-200 font-serif marker:text-[#dc143c]">{children}</ul>,
+    number: ({ children }) => <ol className="ml-6 mb-6 list-decimal space-y-2 text-lg md:text-xl text-gray-800 dark:text-gray-200 font-serif">{children}</ol>,
+  },
+}
+
+// 3. MAIN ARTICLE PAGE UI
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
-  // We fetch EVERYTHING (...) so we can see the exact field names in the diagnostic dump
+  // MULTI-TARGET AUTHOR FETCH: Scans all possible fields where your name/picture might live
   const post = await client.fetch(
-    `*[_type == "post" && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
+    `*[_type in ["post", "article", "news"] && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
       ...,
-      "authorName": author->name,
-      "authorImage": author->image
+      "body": coalesce(body, content, text),
+      "summaryText": coalesce(summary, description),
+      "authorName": coalesce(author->name, writer->name, byline, authorName, "GEOTREXX MEDIA GROUP"),
+      "authorImage": coalesce(author->image, writer->image, authorImage)
     }`,
-    { slug }
+    { slug },
+    { cache: 'no-store' }
   )
 
   if (!post) {
     notFound()
   }
 
+  const finalAuthorName = post.authorName || "GEOTREXX MEDIA GROUP"
+
   return (
-    <main className="max-w-4xl mx-auto px-4 py-10">
-      <article>
-        {/* Category Label */}
-        {post.category && (
-          <div className="text-center mb-4">
-            <span className="text-red-600 font-bold uppercase tracking-wider text-sm">
-              {post.category}
-            </span>
-          </div>
-        )}
-
-        {/* Title */}
-        <h1 className="text-4xl md:text-5xl font-black text-center text-slate-900 mb-8 leading-tight">
-          {post.title}
-        </h1>
-
-        {/* Author / Date */}
-        <div className="flex items-center justify-center gap-3 mb-10">
-          {post.authorImage && (
-            <Image
-              src={urlFor(post.authorImage).width(50).height(50).url()}
-              alt={post.authorName || 'Author'}
-              width={50}
-              height={50}
-              className="rounded-full bg-gray-200 object-cover"
-            />
+    <main className="w-full bg-white dark:bg-[#0a0b10] min-h-screen">
+      <article className="max-w-4xl mx-auto px-4 py-12 md:py-16">
+        
+        {/* Header: Category & Title */}
+        <header className="max-w-3xl mx-auto mb-10">
+          {post.category && (
+            <div className="flex items-center space-x-2 mb-4">
+              <span className="w-2 h-2 bg-[#dc143c] rounded-full"></span>
+              <span className="text-[#dc143c] font-black uppercase tracking-widest text-xs md:text-sm">
+                {post.category}
+              </span>
+            </div>
           )}
-          <div className="text-sm font-semibold text-gray-700 uppercase tracking-wide text-center">
-            BY {post.authorName || 'GEOTREXX'}
-            {post.publishedAt && (
-              <>
-                <br />
-                <span className="text-gray-500 font-normal">
-                  {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
+          
+          {/* THE "FIRE" GRADIENT HEADING */}
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-gray-900 via-gray-800 to-gray-500 dark:from-white dark:via-gray-100 dark:to-gray-500 leading-[1.05] tracking-tighter mb-6 drop-shadow-sm">
+            {post.title}
+          </h1>
 
-        {/* Featured Image */}
-        {post.mainImage && (
-          <div className="mb-10 w-full relative h-[400px] md:h-[500px]">
+          {/* Premium Journalistic Summary / Lead */}
+          {post.summaryText && (
+            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 font-medium mb-8 leading-snug">
+              {post.summaryText}
+            </p>
+          )}
+          
+          {/* Elite Author Block */}
+          <div className="flex items-center space-x-4 border-t border-b border-gray-200 dark:border-gray-800 py-4 mb-8">
+            {post.authorImage?.asset ? (
+              <Image
+                src={urlFor(post.authorImage).width(60).height(60).url()}
+                alt={finalAuthorName}
+                width={48}
+                height={48}
+                className="rounded-full object-cover border border-gray-200 dark:border-gray-800"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-[#dc143c] flex items-center justify-center text-white font-black text-xl shadow-sm">
+                {finalAuthorName.charAt(0)}
+              </div>
+            )}
+            <div>
+              <div className="text-sm font-black text-black dark:text-white uppercase tracking-wider">
+                {finalAuthorName}
+              </div>
+              {post.publishedAt && (
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">
+                  {new Date(post.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Premium Hero Image */}
+        {post.mainImage?.asset && (
+          <div className="w-full relative aspect-[16/9] mb-12 bg-gray-100 dark:bg-[#111] rounded-sm overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm">
             <Image
               src={urlFor(post.mainImage).url()}
               alt={post.title}
               fill
-              className="object-cover rounded-lg"
+              sizes="(max-width: 1200px) 100vw, 1200px"
+              className="object-cover"
               priority
             />
           </div>
         )}
 
-        {/* Body Text */}
-        <div className="prose prose-lg max-w-none prose-slate mx-auto">
-          {post.body ? <PortableText value={post.body} /> : null}
+        {/* The Story / Body Text */}
+        <div className="max-w-3xl mx-auto">
+          {post.body ? (
+            <PortableText value={post.body} components={RichTextComponents} />
+          ) : (
+            <p className="text-gray-500 italic">Story content is being updated.</p>
+          )}
         </div>
+        
       </article>
-
-      {/* --- DEVELOPER DIAGNOSTIC DUMP --- */}
-      <div className="mt-20 bg-slate-900 text-green-400 p-6 rounded-lg overflow-x-auto font-mono text-xs border border-red-500">
-        <h2 className="text-white mb-4 text-lg font-bold">🛠️ DIAGNOSTIC DUMP</h2>
-        <p className="text-slate-400 mb-4">
-          Please copy this green text and paste it back into the chat. It shows exactly how your database is structured.
-        </p>
-        <pre>{JSON.stringify(post, null, 2)}</pre>
-      </div>
     </main>
   )
 }

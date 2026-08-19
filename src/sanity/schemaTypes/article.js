@@ -1,6 +1,6 @@
 export default {
-  name: 'post',
-  title: 'Post',
+  name: 'article',
+  title: 'Article',
   type: 'document',
   fields: [
     {
@@ -20,10 +20,16 @@ export default {
       validation: (Rule) => Rule.required(),
     },
     {
+      name: 'summary',
+      title: 'Summary',
+      type: 'text',
+      description: 'Short snippet used for the article intro and social media links',
+    },
+    {
       name: 'author',
       title: 'Author',
       type: 'reference',
-      to: [{ type: 'author' }],
+      to: { type: 'author' },
     },
     {
       name: 'mainImage',
@@ -44,10 +50,25 @@ export default {
           { title: 'Business', value: 'business' },
           { title: 'Sports', value: 'sports' },
           { title: 'Football', value: 'football' },
+          { title: 'Transfers', value: 'transfers' },
           { title: 'STEM', value: 'stem' },
           { title: 'Entertainment', value: 'entertainment' },
           { title: 'World', value: 'world' },
           { title: 'Opinion', value: 'opinion' },
+        ],
+        layout: 'dropdown',
+      },
+    },
+    {
+      name: 'subsection',
+      title: 'Subsection (Optional)',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Local News', value: 'local-news' },
+          { title: 'International', value: 'international' },
+          { title: 'Match Reports', value: 'match-reports' },
+          { title: 'Editorials', value: 'editorials' },
         ],
         layout: 'dropdown',
       },
@@ -61,28 +82,7 @@ export default {
       name: 'body',
       title: 'Body',
       type: 'array',
-      of: [
-        {
-          type: 'block',
-        },
-        {
-          type: 'image',
-          options: { hotspot: true },
-        },
-      ],
+      of: [{ type: 'block' }, { type: 'image' }],
     },
   ],
-  preview: {
-    select: {
-      title: 'title',
-      author: 'author.name',
-      media: 'mainImage',
-    },
-    prepare(selection) {
-      const { author } = selection
-      return Object.assign({}, selection, {
-        subtitle: author && `by ${author}`,
-      })
-    },
-  },
 }
