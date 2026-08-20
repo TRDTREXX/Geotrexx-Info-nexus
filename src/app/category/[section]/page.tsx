@@ -1,8 +1,9 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-import { client } from '../../../../sanity/lib/client'
-import { urlFor } from '../../../../sanity/lib/image'
+// Corrected relative paths: exactly three levels up to reach the src folder
+import { client } from '../../../sanity/lib/client'
+import { urlFor } from '../../../sanity/lib/image'
 import Image from 'next/image'
 import Link from 'next/link'
 
