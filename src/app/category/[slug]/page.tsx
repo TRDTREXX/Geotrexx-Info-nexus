@@ -34,20 +34,29 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 const RichTextComponents: PortableTextComponents = {
-  // 🔥 THIS TELLS NEXT.JS HOW TO RENDER IMAGES INSIDE THE TEXT BODY
+  // 🔥 BYPASS: Using standard <img> tag to override Next.js strict sizing errors
   types: {
     image: ({ value }: any) => {
-      if (!value?.asset?._ref) return null
-      return (
-        <div className="relative w-full aspect-video my-10 bg-gray-100 dark:bg-[#111] rounded-md overflow-hidden border border-gray-200 dark:border-gray-800">
-          <Image
-            src={urlFor(value).url()}
-            alt={value.alt || 'GEOTREXX Article Image'}
-            fill
-            className="object-contain"
-          />
-        </div>
-      )
+      // Safety check: if there is no image linked, don't crash the page
+      if (!value?.asset?._ref) {
+        return <div className="text-red-500 text-sm italic my-4">Image link missing in database</div>
+      }
+
+      try {
+        const imageUrl = urlFor(value).url()
+        return (
+          <div className="w-full flex justify-center my-10">
+            <img
+              src={imageUrl}
+              alt={value.alt || 'GEOTREXX Article Image'}
+              className="w-full h-auto max-h-[700px] object-contain rounded-md bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 shadow-sm"
+              loading="lazy"
+            />
+          </div>
+        )
+      } catch (error) {
+        return <div className="text-red-500 text-sm italic my-4">Error loading image</div>
+      }
     }
   },
   block: {
