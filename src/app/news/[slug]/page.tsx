@@ -10,7 +10,7 @@ import { notFound } from 'next/navigation'
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const post = await client.fetch(
-    `*[_type in ["post", "article", "news"] && slug.current == $slug][0]{
+    `*[_type in ["post", "article", "news"] && slug.current == $slug && !(_id in path("drafts.**"))][0]{
       title,
       "summary": coalesce(summary, description, "Read the full story on GEOTREXX."),
       "mainImage": coalesce(mainImage, image, coverImage)
@@ -33,6 +33,23 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 const RichTextComponents: PortableTextComponents = {
+  types: {
+    image: ({ value }: any) => {
+      // Direct URL fetch from the unpacked GROQ query
+      if (!value?.asset?.url) return null;
+      
+      return (
+        <div className="w-full flex justify-center my-10">
+          <img
+            src={value.asset.url}
+            alt={value.alt || 'GEOTREXX Article Image'}
+            className="w-full h-auto max-h-[700px] object-contain rounded-md bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 shadow-sm"
+            loading="lazy"
+          />
+        </div>
+      )
+    }
+  },
   block: {
     normal: ({ children }) => <p className="mb-6 leading-relaxed text-gray-800 dark:text-gray-200 text-lg md:text-xl font-serif">{children}</p>,
     h1: ({ children }) => <h1 className="text-3xl md:text-4xl font-black mt-12 mb-6 text-black dark:text-white tracking-tight">{children}</h1>,
@@ -53,12 +70,21 @@ const RichTextComponents: PortableTextComponents = {
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
+  // 🔥 Unpacking the image URL directly in the query body
   const post = await client.fetch(
-    `*[_type in ["post", "article", "news"] && slug.current == $slug][0]{
+    `*[_type in ["post", "article", "news"] && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
       ...,
-      "body": coalesce(body, content, text),
+      "body": coalesce(body, content, text)[]{
+        ...,
+        _type == "image" => {
+          ...,
+          asset->{
+            url
+          }
+        }
+      },
       "summaryText": coalesce(summary, description),
-      "authorName": author->name,
+      "authorName": coalesce(author->name, writer->name, byline, authorName, "GEOTREXX MEDIA GROUP"),
       "authorImageUrl": author->image.asset->url
     }`,
     { slug },
