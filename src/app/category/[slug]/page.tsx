@@ -1,95 +1,163 @@
-import { createClient } from '@sanity/client';
-import Link from 'next/link';
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
-const client = createClient({
-  projectId: 'x0tpoga9',
-  dataset: 'production',
-  useCdn: false,
-  apiVersion: '2024-03-01',
-});
+// Using strict relative paths to prevent Vercel build errors
+import { client } from '../../../sanity/lib/client'
+import { urlFor } from '../../../sanity/lib/image'
+import { PortableText, PortableTextComponents } from '@portabletext/react'
+import Image from 'next/image'
+import { notFound } from 'next/navigation'
 
-export const revalidate = 10;
-
-const CATEGORY_MATRIX = {
-  SPORTS: ['sport', 'football', 'soccer', 'xavi', 'barcelona', 'madrid', 'chelsea', 'arsenal', 'coach', 'stadium', 'match', 'tournament', 'fifa', 'uefa', 'nba', 'basketball', 'tennis', 'transfer', 'premier league', 'black stars', 'la liga', 'athletics'],
-  POLITICS: ['politic', 'minister', 'president', 'election', 'government', 'npp', 'ndc', 'parliament', 'mps', 'vote', 'policy', 'campaign', 'mahama', 'bawumia', 'akufo-addo', 'diplomat'],
-  BUSINESS: ['business', 'econom', 'market', 'bank', 'finance', 'cedi', 'dollar', 'inflation', 'trade', 'investment', 'imf', 'debt', 'revenue', 'tax', 'corporate', 'industry'],
-  STEM: ['stem', 'science', 'tech', 'ai', 'artificial intelligence', 'innovation', 'engineering', 'math', 'software', 'app', 'digital', 'cyber', 'robot', 'space', 'elon', 'musk', 'tesla', 'spacex', 'trillionaire'],
-  ENTERTAINMENT: ['entertain', 'music', 'movie', 'film', 'celebrity', 'actor', 'actress', 'singer', 'concert', 'album', 'award', 'hollywood', 'lifestyle', 'artist', 'mrbeast', 'mr beast', 'youtube', 'married', 'marriage', 'wedding']
-};
-
-function determineCategory(article: any) {
-  if (article.legacyCategory) {
-    const exactCat = article.legacyCategory.toLowerCase().trim();
-    if (['sports', 'politics', 'business', 'stem', 'entertainment', 'world'].includes(exactCat)) {
-      return exactCat.toUpperCase();
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const post = await client.fetch(
+    `*[_type in ["post", "article", "news"] && slug.current == $slug && !(_id in path("drafts.**"))][0]{
+      title,
+      "summary": coalesce(summary, description, "Read the full story on GEOTREXX."),
+      "mainImage": coalesce(mainImage, image, coverImage)
+    }`,
+    { slug },
+    { cache: 'no-store' }
+  )
+  if (!post) return { title: 'Article Not Found | GEOTREXX' }
+  return {
+    title: `${post.title} | GEOTREXX`,
+    description: post.summary,
+    openGraph: {
+      title: post.title,
+      description: post.summary,
+      url: `https://www.geotrexx.com/news/${slug}`, 
+      images: post.mainImage?.asset ? [{ url: urlFor(post.mainImage).width(1200).height(630).url() }] : [],
+      type: 'article',
     }
   }
-
-  const textToScan = `${article.legacyCategory || ''} ${article.category || ''} ${article.title || ''} ${article.summary || ''}`.toLowerCase();
-
-  for (const [categoryName, keywords] of Object.entries(CATEGORY_MATRIX)) {
-    if (keywords.some(keyword => {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
-      return regex.test(textToScan);
-    })) {
-      return categoryName;
-    }
-  }
-
-  return 'GHANA';
 }
 
-export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
-  const resolvedParams = await params;
-  const slug = resolvedParams.slug;
-  const cleanCategory = slug.replace(/-/g, ' ').toUpperCase();
-
-  const allArticles = await client.fetch(`
-    *[_type == "article"] | order(publishedAt desc)[0...200] {
-      _id,
-      title,
-      summary,
-      "slug": slug.current,
-      "imageUrl": mainImage.asset->url,
-      legacyCategory,
-      category,
-      publishedAt
+const RichTextComponents: PortableTextComponents = {
+  // 🔥 THIS TELLS NEXT.JS HOW TO RENDER IMAGES INSIDE THE TEXT BODY
+  types: {
+    image: ({ value }: any) => {
+      if (!value?.asset?._ref) return null
+      return (
+        <div className="relative w-full aspect-video my-10 bg-gray-100 dark:bg-[#111] rounded-md overflow-hidden border border-gray-200 dark:border-gray-800">
+          <Image
+            src={urlFor(value).url()}
+            alt={value.alt || 'GEOTREXX Article Image'}
+            fill
+            className="object-contain"
+          />
+        </div>
+      )
     }
-  `);
+  },
+  block: {
+    normal: ({ children }) => <p className="mb-6 leading-relaxed text-gray-800 dark:text-gray-200 text-lg md:text-xl font-serif">{children}</p>,
+    h1: ({ children }) => <h1 className="text-3xl md:text-4xl font-black mt-12 mb-6 text-black dark:text-white tracking-tight">{children}</h1>,
+    h2: ({ children }) => <h2 className="text-2xl md:text-3xl font-black mt-10 mb-4 text-black dark:text-white tracking-tight">{children}</h2>,
+    h3: ({ children }) => <h3 className="text-xl md:text-2xl font-bold mt-8 mb-4 text-black dark:text-white">{children}</h3>,
+    blockquote: ({ children }) => (
+      <blockquote className="border-l-4 border-[#dc143c] pl-6 my-8 italic text-xl md:text-2xl font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-[#111] py-6 pr-6 shadow-sm">
+        {children}
+      </blockquote>
+    ),
+  },
+  list: {
+    bullet: ({ children }) => <ul className="ml-6 mb-6 list-disc space-y-2 text-lg md:text-xl text-gray-800 dark:text-gray-200 font-serif marker:text-[#dc143c]">{children}</ul>,
+    number: ({ children }) => <ol className="ml-6 mb-6 list-decimal space-y-2 text-lg md:text-xl text-gray-800 dark:text-gray-200 font-serif">{children}</ol>,
+  },
+}
 
-  const articles = allArticles.filter((article: any) => determineCategory(article) === cleanCategory);
+export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+
+  const post = await client.fetch(
+    `*[_type in ["post", "article", "news"] && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
+      ...,
+      "body": coalesce(body, content, text),
+      "summaryText": coalesce(summary, description),
+      "authorName": coalesce(author->name, writer->name, byline, authorName, "GEOTREXX MEDIA GROUP"),
+      "authorImageUrl": author->image.asset->url
+    }`,
+    { slug },
+    { cache: 'no-store' }
+  )
+
+  if (!post) notFound()
+
+  const finalAuthorName = post.authorName || "GEOTREXX MEDIA GROUP"
 
   return (
-    <main className="w-full bg-white dark:bg-[#0a0b10] min-h-screen py-16 transition-colors">
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8">
-        <div className="mb-12 border-b-2 border-gray-900 dark:border-white pb-4 inline-block">
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">
-            {cleanCategory}
+    <main className="w-full bg-white dark:bg-[#0a0b10] min-h-screen">
+      <article className="max-w-4xl mx-auto px-4 py-12 md:py-16">
+        
+        <header className="max-w-3xl mx-auto mb-10">
+          {post.category && (
+            <div className="flex items-center space-x-2 mb-4">
+              <span className="w-2 h-2 bg-[#dc143c] rounded-full"></span>
+              <span className="text-[#dc143c] font-black uppercase tracking-widest text-xs md:text-sm">
+                {post.category}
+              </span>
+            </div>
+          )}
+          
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-gray-900 via-gray-800 to-gray-500 dark:from-white dark:via-gray-100 dark:to-gray-500 leading-[1.05] tracking-tighter mb-6 drop-shadow-sm">
+            {post.title}
           </h1>
-        </div>
 
-        {(!articles || articles.length === 0) ? (
-          <p className="text-gray-500 font-bold uppercase tracking-widest text-lg py-20">Gathering Intel for {cleanCategory}...</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {articles.map((article: any) => (
-              <Link href={`/news/${article.slug}`} key={article._id} className="group flex flex-col bg-gray-50 dark:bg-[#1a1b23] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-800">
-                <div className="w-full h-56 bg-gray-200 dark:bg-gray-800 overflow-hidden relative">
-                  {article.imageUrl && <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />}
-                  <div className="absolute top-4 left-4 bg-[#C8102E] text-white text-[10px] font-black uppercase px-3 py-1 shadow-sm">
-                    {cleanCategory}
-                  </div>
+          {post.summaryText && (
+            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 font-medium mb-8 leading-snug">
+              {post.summaryText}
+            </p>
+          )}
+          
+          <div className="flex items-center space-x-4 border-t border-b border-gray-200 dark:border-gray-800 py-4 mb-8">
+            {post.authorImageUrl ? (
+              <Image
+                src={post.authorImageUrl}
+                alt={finalAuthorName}
+                width={48}
+                height={48}
+                className="rounded-full object-cover border border-gray-200 dark:border-gray-800"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-[#dc143c] flex items-center justify-center text-white font-black text-xl shadow-sm">
+                {finalAuthorName.charAt(0)}
+              </div>
+            )}
+            <div>
+              <div className="text-sm font-black text-black dark:text-white uppercase tracking-wider">
+                {finalAuthorName}
+              </div>
+              {post.publishedAt && (
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">
+                  {new Date(post.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
-                <div className="p-6 flex flex-col flex-1">
-                  <h3 className="text-xl font-black text-gray-900 dark:text-white leading-snug mb-3 group-hover:text-[#C8102E] transition-colors line-clamp-3">{article.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-2 mt-auto">{article.summary}</p>
-                </div>
-              </Link>
-            ))}
+              )}
+            </div>
+          </div>
+        </header>
+
+        {post.mainImage?.asset && (
+          <div className="w-full relative aspect-[16/9] mb-12 bg-gray-100 dark:bg-[#111] rounded-sm overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm">
+            <Image
+              src={urlFor(post.mainImage).url()}
+              alt={post.title}
+              fill
+              sizes="(max-width: 1200px) 100vw, 1200px"
+              className="object-cover"
+              priority
+            />
           </div>
         )}
-      </div>
+
+        <div className="max-w-3xl mx-auto">
+          {post.body ? (
+            <PortableText value={post.body} components={RichTextComponents} />
+          ) : (
+            <p className="text-gray-500 italic">Story content is being updated.</p>
+          )}
+        </div>
+      </article>
     </main>
-  );
+  )
 }
