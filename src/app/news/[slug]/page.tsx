@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+// Strict relative paths
 import { client } from '../../../sanity/lib/client'
 import { urlFor } from '../../../sanity/lib/image'
 import { PortableText, PortableTextComponents } from '@portabletext/react'
@@ -34,16 +35,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 const RichTextComponents: PortableTextComponents = {
   types: {
+    // 🔥 The Bulletproof Inline Image Fix
     image: ({ value }: any) => {
-      // Direct URL fetch from the unpacked GROQ query
-      if (!value?.asset?.url) return null;
+      if (!value?.asset?._ref) return null;
       
       return (
-        <div className="w-full flex justify-center my-10">
+        <div className="w-full flex justify-center my-10 bg-gray-50 dark:bg-[#111] p-4 rounded-md border border-gray-100 dark:border-gray-800">
           <img
-            src={value.asset.url}
+            src={urlFor(value).url()}
             alt={value.alt || 'GEOTREXX Article Image'}
-            className="w-full h-auto max-h-[700px] object-contain rounded-md bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 shadow-sm"
+            // object-contain ensures the image is NEVER cut off
+            className="w-full h-auto max-h-[600px] object-contain rounded-sm shadow-sm"
             loading="lazy"
           />
         </div>
@@ -70,19 +72,11 @@ const RichTextComponents: PortableTextComponents = {
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
-  // 🔥 Unpacking the image URL directly in the query body
+  // Clean, simple query so we don't accidentally break the image data
   const post = await client.fetch(
     `*[_type in ["post", "article", "news"] && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
       ...,
-      "body": coalesce(body, content, text)[]{
-        ...,
-        _type == "image" => {
-          ...,
-          asset->{
-            url
-          }
-        }
-      },
+      "body": coalesce(body, content, text),
       "summaryText": coalesce(summary, description),
       "authorName": coalesce(author->name, writer->name, byline, authorName, "GEOTREXX MEDIA GROUP"),
       "authorImageUrl": author->image.asset->url
@@ -146,15 +140,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         </header>
 
+        {/* 🔥 The PC Crop Fix for Main Images */}
         {post.mainImage?.asset && (
-          <div className="w-full relative aspect-[16/9] mb-12 bg-gray-100 dark:bg-[#111] rounded-sm overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm">
-            <Image
+          <div className="w-full flex justify-center mb-12 bg-gray-50 dark:bg-[#111] rounded-sm border border-gray-200 dark:border-gray-800 shadow-sm py-4 md:py-8">
+            <img
               src={urlFor(post.mainImage).url()}
               alt={post.title}
-              fill
-              sizes="(max-width: 1200px) 100vw, 1200px"
-              className="object-cover"
-              priority
+              // object-contain guarantees the top/bottom is not chopped on PC monitors
+              className="w-full h-auto max-h-[500px] md:max-h-[700px] object-contain"
             />
           </div>
         )}
