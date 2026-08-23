@@ -6,6 +6,15 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'cdn.sanity.io',
       },
+      // Add your original logo domain back here! (Example below)
+      {
+        protocol: 'https',
+        hostname: 'media.graphassets.com', 
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com', 
+      }
     ],
   },
 };

@@ -133,7 +133,7 @@ export default {
     },
     
     // 🔥 THE FIX: Upgraded body schema with full image options
-    {
+   {
       name: 'body',
       title: 'Body',
       type: 'array',
@@ -141,17 +141,10 @@ export default {
         { type: 'block' }, 
         { 
           type: 'image',
+          title: 'Inline Image',
           options: {
-            hotspot: true, // Enables full asset tracking and uploading
-          },
-          fields: [
-            {
-              name: 'alt',
-              type: 'string',
-              title: 'Alternative text',
-              description: 'Brief description of the image for SEO and screen readers.',
-            }
-          ]
+            hotspot: true, // Tells Sanity to treat this exactly like the Main Image
+          }
         }
       ],
     },
