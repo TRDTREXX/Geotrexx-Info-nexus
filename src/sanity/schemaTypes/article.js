@@ -133,7 +133,7 @@ export default {
     },
     
     // 🔥 THE FIX: Upgraded body schema with full image options
-   {
+  {
       name: 'body',
       title: 'Body',
       type: 'array',
@@ -141,9 +141,8 @@ export default {
         { type: 'block' }, 
         { 
           type: 'image',
-          title: 'Inline Image',
           options: {
-            hotspot: true, // Tells Sanity to treat this exactly like the Main Image
+            hotspot: true
           }
         }
       ],
