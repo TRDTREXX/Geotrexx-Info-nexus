@@ -131,11 +131,29 @@ export default {
       title: 'Published at',
       type: 'datetime',
     },
+    
+    // 🔥 THE FIX: Upgraded body schema with full image options
     {
       name: 'body',
       title: 'Body',
       type: 'array',
-      of: [{ type: 'block' }, { type: 'image' }],
+      of: [
+        { type: 'block' }, 
+        { 
+          type: 'image',
+          options: {
+            hotspot: true, // Enables full asset tracking and uploading
+          },
+          fields: [
+            {
+              name: 'alt',
+              type: 'string',
+              title: 'Alternative text',
+              description: 'Brief description of the image for SEO and screen readers.',
+            }
+          ]
+        }
+      ],
     },
 
     // --- LEGACY MIGRATION FIELDS (Force Hidden from UI) ---
