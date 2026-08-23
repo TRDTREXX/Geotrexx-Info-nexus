@@ -72,27 +72,28 @@ export default function SiteNavigation({ tickerText = "GEOTREXX: UNBIASED, ACCUR
         <div className="hidden md:block w-1/3"></div>
 
         {/* Center: Premium Logo */}
-        <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex flex-col items-center justify-center w-1/3 group">
+        {/* 🔥 THE FIX: Added relative, z-50, and cursor-pointer to force clickability over anything else on the page */}
+        <Link href="/" onClick={() => setMobileMenuOpen(false)} className="relative z-50 cursor-pointer flex flex-col items-center justify-center w-1/3 group">
           <img 
             src="/geotrexx-logo.png" 
             alt="GEOTREXX" 
-            className="h-14 w-14 md:h-20 md:w-20 object-cover rounded-full border-2 border-gray-200 dark:border-gray-800 block group-hover:scale-105 group-hover:border-[#C8102E] transition-all duration-300 drop-shadow-md"
+            className="h-14 w-14 md:h-20 md:w-20 object-cover rounded-full border-2 border-gray-200 dark:border-gray-800 block group-hover:scale-105 group-hover:border-[#C8102E] transition-all duration-300 drop-shadow-md cursor-pointer"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               e.currentTarget.nextElementSibling?.classList.remove('hidden');
             }}
           />
-          <h1 className="hidden text-3xl md:text-5xl font-black tracking-tighter text-gray-900 dark:text-white leading-none group-hover:scale-105 transition-transform duration-300">
+          <h1 className="hidden text-3xl md:text-5xl font-black tracking-tighter text-gray-900 dark:text-white leading-none group-hover:scale-105 transition-transform duration-300 cursor-pointer">
             GEO<span className="text-[#C8102E]">TREXX</span>
           </h1>
         </Link>
 
         {/* Right: Actions */}
-        <div className="flex items-center justify-end space-x-4 md:space-x-6 w-1/3">
+        <div className="flex items-center justify-end space-x-4 md:space-x-6 w-1/3 relative z-50">
           {mounted && (
             <button 
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
-              className="text-gray-900 dark:text-white hover:text-[#C8102E] dark:hover:text-[#C8102E] transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="text-gray-900 dark:text-white hover:text-[#C8102E] dark:hover:text-[#C8102E] transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
               aria-label="Toggle Dark Mode"
             >
               {theme === 'dark' ? (
@@ -122,7 +123,7 @@ export default function SiteNavigation({ tickerText = "GEOTREXX: UNBIASED, ACCUR
                       <Link 
                         key={subItem} 
                         href={`${link.path}/${formatPath}`}
-                        className="block px-4 py-2.5 text-[10px] tracking-widest text-gray-700 dark:text-gray-400 hover:text-[#C8102E] dark:hover:text-[#C8102E] hover:bg-gray-50 dark:hover:bg-[#1a1b23] transition-colors"
+                        className="block px-4 py-2.5 text-[10px] tracking-widest text-gray-700 dark:text-gray-400 hover:text-[#C8102E] dark:hover:text-[#C8102E] hover:bg-gray-50 dark:hover:bg-[#1a1b23] transition-colors cursor-pointer"
                       >
                         {subItem}
                       </Link>
@@ -141,7 +142,7 @@ export default function SiteNavigation({ tickerText = "GEOTREXX: UNBIASED, ACCUR
           <ul className="flex flex-col py-6 px-6 space-y-6 text-sm font-bold tracking-widest text-gray-900 dark:text-white uppercase">
             {navLinks.map((link) => (
               <li key={link.name} className="border-b border-gray-100 dark:border-gray-800 pb-6">
-                <Link href={link.path} onClick={() => setMobileMenuOpen(false)} className="block text-xl hover:text-[#C8102E] transition-colors">
+                <Link href={link.path} onClick={() => setMobileMenuOpen(false)} className="block text-xl hover:text-[#C8102E] transition-colors cursor-pointer">
                   {link.name}
                 </Link>
                 {link.sub && (
@@ -153,7 +154,7 @@ export default function SiteNavigation({ tickerText = "GEOTREXX: UNBIASED, ACCUR
                           key={subItem}
                           href={`${link.path}/${formatPath}`}
                           onClick={() => setMobileMenuOpen(false)}
-                          className="text-[10px] bg-gray-100 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 px-3 py-2 rounded-md hover:border-[#C8102E] hover:text-[#C8102E] transition-colors"
+                          className="text-[10px] bg-gray-100 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 px-3 py-2 rounded-md hover:border-[#C8102E] hover:text-[#C8102E] transition-colors cursor-pointer"
                         >
                           {subItem}
                         </Link>
