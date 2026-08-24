@@ -133,19 +133,40 @@ export default {
     },
     
     // 🔥 THE FIX: Upgraded body schema with full image options
-  {
+{
       name: 'body',
       title: 'Body',
       type: 'array',
       of: [
-        { type: 'block' }, 
-        { 
+        { type: 'block' },
+        {
           type: 'image',
-          name: 'articleInlineImage', // 🔥 This forces Sanity to treat every new upload as a distinct, fresh action
-          title: 'Article Image',
+          title: 'Inline Image',
           options: {
-            hotspot: true
-          }
+            hotspot: true,
+          },
+          fields: [
+            {
+              name: 'alt',
+              type: 'string',
+              title: 'Alt Text',
+            }
+          ],
+          // 🔥 THE FIX: Explicitly forces Sanity to render the thumbnail and update the UI
+          preview: {
+            select: {
+              title: 'alt',
+              media: 'asset', // Grabs the actual uploaded image file for the thumbnail
+            },
+            prepare(selection) {
+              const { title, media } = selection;
+              return {
+                title: title || 'Article Image',
+                subtitle: media ? '✅ Image Uploaded' : '⚠️ Double-click to upload image',
+                media: media, // Forces the image to render on the screen instantly
+              };
+            },
+          },
         }
       ],
     },
