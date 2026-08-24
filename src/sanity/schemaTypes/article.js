@@ -141,6 +141,8 @@ export default {
         { type: 'block' }, 
         { 
           type: 'image',
+          name: 'articleInlineImage', // 🔥 This forces Sanity to treat every new upload as a distinct, fresh action
+          title: 'Article Image',
           options: {
             hotspot: true
           }
