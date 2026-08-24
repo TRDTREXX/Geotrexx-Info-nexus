@@ -132,8 +132,8 @@ export default {
       type: 'datetime',
     },
     
-    // 🔥 THE FIX: Upgraded body schema with full image options
-{
+    // 🔥 THE FIX: Pure native Sanity Image API
+    {
       name: 'body',
       title: 'Body',
       type: 'array',
@@ -141,32 +141,18 @@ export default {
         { type: 'block' },
         {
           type: 'image',
-          title: 'Inline Image',
+          title: 'Image',
           options: {
-            hotspot: true,
+            hotspot: true, // Hooks directly into Sanity's native image cropping API
           },
           fields: [
             {
               name: 'alt',
               type: 'string',
-              title: 'Alt Text',
+              title: 'Alternative Text',
+              description: 'Important for SEO and accessibility.',
             }
-          ],
-          // 🔥 THE FIX: Explicitly forces Sanity to render the thumbnail and update the UI
-          preview: {
-            select: {
-              title: 'alt',
-              media: 'asset', // Grabs the actual uploaded image file for the thumbnail
-            },
-            prepare(selection) {
-              const { title, media } = selection;
-              return {
-                title: title || 'Article Image',
-                subtitle: media ? '✅ Image Uploaded' : '⚠️ Double-click to upload image',
-                media: media, // Forces the image to render on the screen instantly
-              };
-            },
-          },
+          ]
         }
       ],
     },
