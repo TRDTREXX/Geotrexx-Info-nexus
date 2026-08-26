@@ -60,7 +60,7 @@ export default {
       },
     },
     
-   // --- SUBSECTIONS (Fully Mapped to GEOTREXX Navigation) ---
+    // --- SUBSECTIONS (Fully Mapped to GEOTREXX Navigation) ---
     {
       name: 'subsection',
       title: 'Subsection',
@@ -131,3 +131,45 @@ export default {
         layout: 'dropdown',
       },
     },
+    
+    {
+      name: 'publishedAt',
+      title: 'Published at',
+      type: 'datetime',
+    },
+    
+    // 🔥 THE FIX: Stripped down to the absolute bare minimum so the upload button renders inline
+    {
+      name: 'body',
+      title: 'Body',
+      type: 'array',
+      of: [
+        { type: 'block' },
+        { type: 'image' }
+      ],
+    },
+
+    // --- LEGACY MIGRATION FIELDS ---
+    {
+      name: 'content',
+      title: 'Legacy Content',
+      type: 'array',
+      of: [{ type: 'block' }, { type: 'image' }],
+      hidden: () => true,
+    },
+    {
+      name: 'editorialCategory',
+      title: 'Legacy Editorial Category',
+      type: 'reference',
+      to: [{ type: 'author' }], 
+      weak: true,
+      hidden: () => true,
+    },
+    {
+      name: 'oldHygraphCategory',
+      title: 'Old Hygraph Category',
+      type: 'string',
+      hidden: () => true,
+    },
+  ],
+}
