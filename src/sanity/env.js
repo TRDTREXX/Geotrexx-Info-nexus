@@ -5,4 +5,5 @@ export const dataset = 'production'
 
 export const projectId = 'x0tpoga9'
 
+// 🔥 Hardcoded to false so Sanity allows file uploads instead of just reading cached data
 export const useCdn = false
