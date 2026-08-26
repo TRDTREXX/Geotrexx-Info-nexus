@@ -60,15 +60,23 @@ export default {
       },
     },
     
-    // --- SUBSECTIONS (Fully Mapped to GEOTREXX Navigation) ---
+   // --- SUBSECTIONS (Fully Mapped to GEOTREXX Navigation) ---
     {
       name: 'subsection',
       title: 'Subsection',
       type: 'string',
-      // Stays hidden until a Main Section is selected
       hidden: ({ document }) => !document?.category, 
       options: {
         list: [
+          // GHANA
+          { title: 'Ghana: Latest', value: 'latest' },
+          { title: 'Ghana: Accra', value: 'accra' },
+          { title: 'Ghana: Regions', value: 'regions' },
+          { title: 'Ghana: Society', value: 'society' },
+          { title: 'Ghana: Education', value: 'education' },
+          { title: 'Ghana: Health', value: 'health' },
+          { title: 'Ghana: Crime & Security', value: 'crime-security' },
+
           // POLITICS
           { title: 'Politics: Ghana Politics', value: 'ghana-politics' },
           { title: 'Politics: Government', value: 'government' },
@@ -115,9 +123,7 @@ export default {
           { title: 'Opinion: Commentary', value: 'commentary' },
           { title: 'Opinion: Columns', value: 'columns' },
           
-          // GHANA & BUSINESS (Basic fallbacks to ensure full coverage)
-          { title: 'Ghana: Local News', value: 'local-news' },
-          { title: 'Ghana: National', value: 'national' },
+          // BUSINESS
           { title: 'Business: Finance', value: 'finance' },
           { title: 'Business: Economy', value: 'economy' },
           { title: 'Business: Markets', value: 'markets' },
@@ -125,59 +131,3 @@ export default {
         layout: 'dropdown',
       },
     },
-    
-    {
-      name: 'publishedAt',
-      title: 'Published at',
-      type: 'datetime',
-    },
-    
-    // 🔥 THE FIX: Pure native Sanity Image API
-    {
-      name: 'body',
-      title: 'Body',
-      type: 'array',
-      of: [
-        { type: 'block' },
-        {
-          type: 'image',
-          title: 'Image',
-          options: {
-            hotspot: true, // Hooks directly into Sanity's native image cropping API
-          },
-          fields: [
-            {
-              name: 'alt',
-              type: 'string',
-              title: 'Alternative Text',
-              description: 'Important for SEO and accessibility.',
-            }
-          ]
-        }
-      ],
-    },
-
-    // --- LEGACY MIGRATION FIELDS (Force Hidden from UI) ---
-    {
-      name: 'content',
-      title: 'Legacy Content',
-      type: 'array',
-      of: [{ type: 'block' }, { type: 'image' }],
-      hidden: () => true,
-    },
-    {
-      name: 'editorialCategory',
-      title: 'Legacy Editorial Category',
-      type: 'reference',
-      to: [{ type: 'author' }], 
-      weak: true,
-      hidden: () => true,
-    },
-    {
-      name: 'oldHygraphCategory',
-      title: 'Old Hygraph Category',
-      type: 'string',
-      hidden: () => true,
-    },
-  ],
-}
