@@ -1,7 +1,28 @@
+import { client } from '@/sanity/lib/client';
+
 export async function GET() {
   const baseUrl = 'https://www.geotrexx.com';
   
-  // Manually construct the raw XML string
+  // 1. Fetch all your published articles from Sanity
+  const query = `*[_type == "article" && defined(slug.current)]{
+    "slug": slug.current,
+    publishedAt
+  }`;
+  
+  const articles = await client.fetch(query);
+
+  // 2. Loop through every article and map it to your /news/ route
+  const articleUrls = articles.map((article) => {
+    return `
+  <url>
+    <loc>${baseUrl}/news/${article.slug}</loc>
+    <lastmod>${article.publishedAt ? new Date(article.publishedAt).toISOString() : new Date().toISOString()}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+  }).join('');
+
+  // 3. Combine the static category pages with your dynamic news pages
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -40,9 +61,9 @@ export async function GET() {
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
+  ${articleUrls}
 </urlset>`;
 
-  // Force the server to return this string as an official XML document
   return new Response(xml, {
     status: 200,
     headers: {
