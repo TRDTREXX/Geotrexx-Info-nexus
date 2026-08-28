@@ -50,14 +50,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     );
   }
 
-  // --- AUTOMATIC AUTHOR IMAGE DETECTION FOR THE HEADER ---
+  // --- AUTOMATIC AUTHOR IMAGE DETECTION ---
   const authorNameLower = (article.authorName || '').toLowerCase();
   let authorStaticImg = null;
   
   if (authorNameLower.includes('orpheus')) {
-    authorStaticImg = '/orpheus.jpg';
+    authorStaticImg = '/orpheus.png';
   } else if (authorNameLower.includes('quist')) {
-    authorStaticImg = '/quist.jpg';
+    authorStaticImg = '/quist.png';
   }
 
   const jsonLd = {

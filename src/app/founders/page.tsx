@@ -21,7 +21,7 @@ export default function FoundersPage() {
         {/* Editor in Chief */}
         <div className="bg-gray-50 dark:bg-[#1a1b23] p-8 rounded-xl border-l-4 border-[#C8102E] flex flex-col md:flex-row gap-8 items-start">
           <div className="relative w-32 h-32 md:w-40 md:h-40 flex-shrink-0 rounded-full overflow-hidden border-4 border-gray-200 dark:border-gray-700">
-            <Image src="/orpheus.jpg" alt="Orpheus Grant-Essilfie" fill className="object-cover" />
+            <Image src="/orpheus.png" alt="Orpheus Grant-Essilfie" fill className="object-cover" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-black dark:text-white mb-1">
@@ -39,7 +39,7 @@ export default function FoundersPage() {
         {/* Managing Editor */}
         <div className="bg-gray-50 dark:bg-[#1a1b23] p-8 rounded-xl border-l-4 border-[#C8102E] flex flex-col md:flex-row gap-8 items-start">
           <div className="relative w-32 h-32 md:w-40 md:h-40 flex-shrink-0 rounded-full overflow-hidden border-4 border-gray-200 dark:border-gray-700">
-            <Image src="/quist.jpg" alt="Quist Ebenezer Assan" fill className="object-cover" />
+            <Image src="/quist.png" alt="Quist Ebenezer Assan" fill className="object-cover" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-black dark:text-white mb-1">
