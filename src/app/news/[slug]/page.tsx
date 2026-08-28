@@ -1,165 +1,139 @@
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+import { client } from '@/sanity/lib/client'; // If Vercel gives you an import error here, change to: '../../../sanity/lib/client'
+import { urlFor } from '@/sanity/lib/image';  // If Vercel gives you an import error here, change to: '../../../sanity/lib/image'
+import { PortableText } from '@portabletext/react';
+import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
+import Image from 'next/image';
 
-// Strict relative paths
-import { client } from '../../../sanity/lib/client'
-import { urlFor } from '../../../sanity/lib/image'
-import { PortableText, PortableTextComponents } from '@portabletext/react'
-import Image from 'next/image'
-import { notFound } from 'next/navigation'
+// 1. Sanity GROQ Query
+const query = `*[_type == "article" && slug.current == $slug][0]{
+  title,
+  summary,
+  publishedAt,
+  category,
+  "authorName": author->name,
+  mainImage,
+  body
+}`;
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const post = await client.fetch(
-    `*[_type in ["post", "article", "news"] && slug.current == $slug && !(_id in path("drafts.**"))][0]{
-      title,
-      "summary": coalesce(summary, description, "Read the full story on GEOTREXX."),
-      "mainImage": coalesce(mainImage, image, coverImage)
-    }`,
-    { slug },
-    { cache: 'no-store' }
-  )
-  if (!post) return { title: 'Article Not Found | GEOTREXX' }
+// 2. Generate Standard SEO Metadata
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const article = await client.fetch(query, { slug: params.slug });
+
+  if (!article) return {};
+
   return {
-    title: `${post.title} | GEOTREXX`,
-    description: post.summary,
+    title: `${article.title} | GEOTREXX`,
+    description: article.summary,
     openGraph: {
-      title: post.title,
-      description: post.summary,
-      url: `https://www.geotrexx.com/news/${slug}`, 
-      images: post.mainImage?.asset ? [{ url: urlFor(post.mainImage).width(1200).height(630).url() }] : [],
-      type: 'article',
-    }
+      title: article.title,
+      description: article.summary,
+      images: article.mainImage ? [urlFor(article.mainImage).url()] : [],
+    },
+  };
+}
+
+// 3. Main Page Component
+export default async function ArticlePage({ params }: { params: { slug: string } }) {
+  const article = await client.fetch(query, { slug: params.slug });
+
+  if (!article) {
+    notFound();
   }
-}
 
-const RichTextComponents: PortableTextComponents = {
-  types: {
-    // 🔥 The Bulletproof Inline Image Fix
-    image: ({ value }: any) => {
-      if (!value?.asset?._ref) return null;
-      
-      return (
-        <div className="w-full flex justify-center my-10 bg-gray-50 dark:bg-[#111] p-4 rounded-md border border-gray-100 dark:border-gray-800">
-          <img
-            src={urlFor(value).url()}
-            alt={value.alt || 'GEOTREXX Article Image'}
-            // object-contain ensures the image is NEVER cut off
-            className="w-full h-auto max-h-[600px] object-contain rounded-sm shadow-sm"
-            loading="lazy"
-          />
-        </div>
-      )
+  // 4. Build the Google News JSON-LD Object
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    "headline": article.title,
+    "description": article.summary,
+    "image": article.mainImage ? [urlFor(article.mainImage).url()] : [],
+    "datePublished": article.publishedAt,
+    "dateModified": article.publishedAt,
+    "author": [{
+        "@type": "Person",
+        "name": article.authorName || "GEOTREXX Desk",
+    }],
+    "publisher": {
+        "@type": "Organization",
+        "name": "GEOTREXX Media Group",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.geotrexx.com/logo.png" 
+        }
     }
-  },
-  block: {
-    normal: ({ children }) => <p className="mb-6 leading-relaxed text-gray-800 dark:text-gray-200 text-lg md:text-xl font-serif">{children}</p>,
-    h1: ({ children }) => <h1 className="text-3xl md:text-4xl font-black mt-12 mb-6 text-black dark:text-white tracking-tight">{children}</h1>,
-    h2: ({ children }) => <h2 className="text-2xl md:text-3xl font-black mt-10 mb-4 text-black dark:text-white tracking-tight">{children}</h2>,
-    h3: ({ children }) => <h3 className="text-xl md:text-2xl font-bold mt-8 mb-4 text-black dark:text-white">{children}</h3>,
-    blockquote: ({ children }) => (
-      <blockquote className="border-l-4 border-[#dc143c] pl-6 my-8 italic text-xl md:text-2xl font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-[#111] py-6 pr-6 shadow-sm">
-        {children}
-      </blockquote>
-    ),
-  },
-  list: {
-    bullet: ({ children }) => <ul className="ml-6 mb-6 list-disc space-y-2 text-lg md:text-xl text-gray-800 dark:text-gray-200 font-serif marker:text-[#dc143c]">{children}</ul>,
-    number: ({ children }) => <ol className="ml-6 mb-6 list-decimal space-y-2 text-lg md:text-xl text-gray-800 dark:text-gray-200 font-serif">{children}</ol>,
-  },
-}
-
-export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-
-  // Clean, simple query so we don't accidentally break the image data
-  const post = await client.fetch(
-    `*[_type in ["post", "article", "news"] && slug.current == $slug && !(_id in path("drafts.**"))] | order(_updatedAt desc)[0]{
-      ...,
-      "body": coalesce(body, content, text),
-      "summaryText": coalesce(summary, description),
-      "authorName": coalesce(author->name, writer->name, byline, authorName, "GEOTREXX MEDIA GROUP"),
-      "authorImageUrl": author->image.asset->url
-    }`,
-    { slug },
-    { cache: 'no-store' }
-  )
-
-  if (!post) notFound()
-
-  const finalAuthorName = post.authorName || "GEOTREXX MEDIA GROUP"
+  };
 
   return (
-    <main className="w-full bg-white dark:bg-[#0a0b10] min-h-screen">
-      <article className="max-w-4xl mx-auto px-4 py-12 md:py-16">
-        
-        <header className="max-w-3xl mx-auto mb-10">
-          {post.category && (
-            <div className="flex items-center space-x-2 mb-4">
-              <span className="w-2 h-2 bg-[#dc143c] rounded-full"></span>
-              <span className="text-[#dc143c] font-black uppercase tracking-widest text-xs md:text-sm">
-                {post.category}
-              </span>
-            </div>
-          )}
-          
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-gray-900 via-gray-800 to-gray-500 dark:from-white dark:via-gray-100 dark:to-gray-500 leading-[1.05] tracking-tighter mb-6 drop-shadow-sm">
-            {post.title}
-          </h1>
-
-          {post.summaryText && (
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 font-medium mb-8 leading-snug">
-              {post.summaryText}
-            </p>
-          )}
-          
-          <div className="flex items-center space-x-4 border-t border-b border-gray-200 dark:border-gray-800 py-4 mb-8">
-            {post.authorImageUrl ? (
-              <Image
-                src={post.authorImageUrl}
-                alt={finalAuthorName}
-                width={48}
-                height={48}
-                className="rounded-full object-cover border border-gray-200 dark:border-gray-800"
-              />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-[#dc143c] flex items-center justify-center text-white font-black text-xl shadow-sm">
-                {finalAuthorName.charAt(0)}
-              </div>
-            )}
-            <div>
-              <div className="text-sm font-black text-black dark:text-white uppercase tracking-wider">
-                {finalAuthorName}
-              </div>
-              {post.publishedAt && (
-                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">
-                  {new Date(post.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {/* 🔥 The PC Crop Fix for Main Images */}
-        {post.mainImage?.asset && (
-          <div className="w-full flex justify-center mb-12 bg-gray-50 dark:bg-[#111] rounded-sm border border-gray-200 dark:border-gray-800 shadow-sm py-4 md:py-8">
-            <img
-              src={urlFor(post.mainImage).url()}
-              alt={post.title}
-              // object-contain guarantees the top/bottom is not chopped on PC monitors
-              className="w-full h-auto max-h-[500px] md:max-h-[700px] object-contain"
-            />
-          </div>
-        )}
-
-        <div className="max-w-3xl mx-auto">
-          {post.body ? (
-            <PortableText value={post.body} components={RichTextComponents} />
-          ) : (
-            <p className="text-gray-500 italic">Story content is being updated.</p>
-          )}
+    <article className="max-w-4xl mx-auto px-6 py-12">
+      {/* 🔥 THE INVISIBLE GOOGLE NEWS SCRIPT */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      
+      {/* --- VISIBLE ARTICLE HEADER --- */}
+      <header className="mb-10">
+        <div className="flex items-center gap-4 mb-6 text-xs font-bold uppercase tracking-widest text-[#C8102E]">
+          <span>{article.category || 'News'}</span>
+          <span>•</span>
+          <span>{new Date(article.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
-      </article>
-    </main>
-  )
+        
+        <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-6 text-black dark:text-white leading-tight">
+          {article.title}
+        </h1>
+        
+        <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 font-medium leading-relaxed mb-6">
+          {article.summary}
+        </p>
+
+        <div className="text-sm font-bold text-gray-800 dark:text-gray-300">
+          By {article.authorName || 'GEOTREXX Desk'}
+        </div>
+      </header>
+
+      {/* --- MAIN IMAGE --- */}
+      {article.mainImage && (
+        <div className="relative w-full aspect-video mb-12 rounded-lg overflow-hidden border-b-4 border-[#C8102E]">
+          <Image
+            src={urlFor(article.mainImage).url()}
+            alt={article.title}
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
+      )}
+
+      {/* --- ARTICLE BODY --- */}
+      <div className="prose prose-lg dark:prose-invert max-w-none">
+        <PortableText value={article.body} />
+      </div>
+
+      {/* --- AUTHOR BIO SECTION --- */}
+      <hr className="my-12 border-gray-200 dark:border-gray-800" />
+      
+      <div className="bg-gray-50 dark:bg-[#1a1b23] p-8 rounded-xl border-l-4 border-[#C8102E]">
+        <h3 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4">
+          About the Author
+        </h3>
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          <div className="flex-1">
+            <h4 className="text-xl font-bold text-black dark:text-white mb-2">
+              {article.authorName || 'GEOTREXX Desk'}
+            </h4>
+            <p className="text-gray-600 dark:text-gray-400 font-medium leading-relaxed text-sm">
+              {article.authorName === 'Orpheus Grant-Essilfie' 
+                ? "Orpheus Grant-Essilfie is the Co-Founder and Editor-in-Chief of GEOTREXX Media Group. He brings sharp analytical rigor to digital journalism, overseeing the platform's editorial direction. He specializes in political analysis, structural governance, and data-driven sports reporting, ensuring authoritative coverage across all major categories."
+                : article.authorName === 'Quist Ebenezer Assan' 
+                ? "Quist Ebenezer Assan is the Co-Founder and Managing Editor of GEOTREXX Media Group. With a strong foundation in digital media operations and content strategy, he drives the day-to-day editorial workflow. He is dedicated to maintaining the desk's standard for fast, accurate, and unbiased reporting."
+                : "The GEOTREXX Desk delivers fast, unbiased, and authoritative news covering Ghana, global politics, business, and sports."
+              }
+            </p>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
 }
