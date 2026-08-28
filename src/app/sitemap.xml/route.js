@@ -3,8 +3,8 @@ import { client } from '../../sanity/lib/client';
 export async function GET() {
   const baseUrl = 'https://www.geotrexx.com';
   
-  // Changed type to "news"
-  const query = `*[_type == "news" && defined(slug.current)]{
+  // Fix: Looking for "post" in the database
+  const query = `*[_type == "post" && defined(slug.current)]{
     "slug": slug.current,
     publishedAt
   }`;

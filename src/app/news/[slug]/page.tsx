@@ -1,11 +1,11 @@
 import { client } from '../../../sanity/lib/client';
 import { urlFor } from '../../../sanity/lib/image';
 import { PortableText } from '@portabletext/react';
-import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Image from 'next/image';
 
-const query = `*[_type == "news" && slug.current == $slug][0]{
+// Fix: Looking for "post" in the database
+const query = `*[_type == "post" && slug.current == $slug][0]{
   title,
   summary,
   publishedAt,
@@ -36,8 +36,28 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const resolvedParams = await params;
   const article = await client.fetch(query, { slug: resolvedParams.slug });
 
+  // Custom Debug Screen if Sanity returns nothing
   if (!article) {
-    notFound();
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-32 text-center">
+        <h1 className="text-3xl md:text-5xl font-black text-[#C8102E] uppercase tracking-tighter mb-4">
+          Data Disconnect
+        </h1>
+        <p className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">
+          Next.js asked Sanity for a published article with this exact slug:
+        </p>
+        <div className="inline-block bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 mt-4 mb-8">
+          <code className="text-xl md:text-2xl font-mono font-bold text-black dark:text-white">
+            {resolvedParams.slug || "UNDEFINED (Your homepage link is broken)"}
+          </code>
+        </div>
+        <div className="text-left max-w-lg mx-auto space-y-2 text-sm text-gray-500 bg-gray-50 dark:bg-[#1a1b23] p-6 rounded-xl">
+          <p><strong>1.</strong> Check Sanity Studio: Is the article fully <b>Published</b>?</p>
+          <p><strong>2.</strong> Check the Slug: Does the text in the box above match the slug in Sanity perfectly?</p>
+          <p><strong>3.</strong> Check the Type: Is your schema name definitely set to <code>post</code>?</p>
+        </div>
+      </div>
+    );
   }
 
   const jsonLd = {

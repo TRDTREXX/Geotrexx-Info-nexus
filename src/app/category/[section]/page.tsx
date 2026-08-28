@@ -4,8 +4,9 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 
-export async function generateMetadata({ params }: { params: { section: string } }): Promise<Metadata> {
-  const categoryName = params.section.charAt(0).toUpperCase() + params.section.slice(1);
+export async function generateMetadata({ params }: { params: Promise<{ section: string }> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const categoryName = resolvedParams.section.charAt(0).toUpperCase() + resolvedParams.section.slice(1);
 
   return {
     title: `${categoryName} News | GEOTREXX`,
@@ -17,8 +18,8 @@ export async function generateMetadata({ params }: { params: { section: string }
   };
 }
 
-// Changed type to "news"
-const query = `*[_type == "news" && category == $section] | order(publishedAt desc) {
+// Fix: Looking for "post" in the database
+const query = `*[_type == "post" && category == $section] | order(publishedAt desc) {
   _id,
   title,
   summary,
@@ -27,9 +28,10 @@ const query = `*[_type == "news" && category == $section] | order(publishedAt de
   mainImage
 }`;
 
-export default async function CategoryPage({ params }: { params: { section: string } }) {
-  const articles = await client.fetch(query, { section: params.section });
-  const categoryTitle = params.section.charAt(0).toUpperCase() + params.section.slice(1);
+export default async function CategoryPage({ params }: { params: Promise<{ section: string }> }) {
+  const resolvedParams = await params;
+  const articles = await client.fetch(query, { section: resolvedParams.section });
+  const categoryTitle = resolvedParams.section.charAt(0).toUpperCase() + resolvedParams.section.slice(1);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
