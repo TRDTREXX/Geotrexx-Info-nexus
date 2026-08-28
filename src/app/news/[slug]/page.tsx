@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Image from 'next/image';
 
-// Changed type to "news"
 const query = `*[_type == "news" && slug.current == $slug][0]{
   title,
   summary,
@@ -16,8 +15,9 @@ const query = `*[_type == "news" && slug.current == $slug][0]{
   body
 }`;
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const article = await client.fetch(query, { slug: params.slug });
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const article = await client.fetch(query, { slug: resolvedParams.slug });
 
   if (!article) return {};
 
@@ -32,8 +32,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function ArticlePage({ params }: { params: { slug: string } }) {
-  const article = await client.fetch(query, { slug: params.slug });
+export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params;
+  const article = await client.fetch(query, { slug: resolvedParams.slug });
 
   if (!article) {
     notFound();
