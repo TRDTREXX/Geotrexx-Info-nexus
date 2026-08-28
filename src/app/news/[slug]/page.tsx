@@ -1,5 +1,5 @@
-import { client } from '@/sanity/lib/client'; // If Vercel gives you an import error here, change to: '../../../sanity/lib/client'
-import { urlFor } from '@/sanity/lib/image';  // If Vercel gives you an import error here, change to: '../../../sanity/lib/image'
+import { client } from '../../../sanity/lib/client';
+import { urlFor } from '../../../sanity/lib/image';
 import { PortableText } from '@portabletext/react';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';

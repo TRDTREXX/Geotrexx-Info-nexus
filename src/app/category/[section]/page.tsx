@@ -1,12 +1,12 @@
-import { client } from '@/sanity/lib/client';
-import { urlFor } from '@/sanity/lib/image';
+import { client } from '../../../sanity/lib/client';
+import { urlFor } from '../../../sanity/lib/image';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 
 // 1. Dynamic SEO Metadata Generation
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const categoryName = params.slug.charAt(0).toUpperCase() + params.slug.slice(1);
+export async function generateMetadata({ params }: { params: { section: string } }): Promise<Metadata> {
+  const categoryName = params.section.charAt(0).toUpperCase() + params.section.slice(1);
 
   return {
     title: `${categoryName} News | GEOTREXX`,
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 // 2. Sanity GROQ Query for Category Articles
-const query = `*[_type == "article" && category == $slug] | order(publishedAt desc) {
+const query = `*[_type == "article" && category == $section] | order(publishedAt desc) {
   _id,
   title,
   summary,
@@ -29,9 +29,9 @@ const query = `*[_type == "article" && category == $slug] | order(publishedAt de
 }`;
 
 // 3. Main Page Component
-export default async function CategoryPage({ params }: { params: { slug: string } }) {
-  const articles = await client.fetch(query, { slug: params.slug });
-  const categoryTitle = params.slug.charAt(0).toUpperCase() + params.slug.slice(1);
+export default async function CategoryPage({ params }: { params: { section: string } }) {
+  const articles = await client.fetch(query, { section: params.section });
+  const categoryTitle = params.section.charAt(0).toUpperCase() + params.section.slice(1);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
