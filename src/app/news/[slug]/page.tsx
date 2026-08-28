@@ -5,8 +5,8 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Image from 'next/image';
 
-// 1. Sanity GROQ Query
-const query = `*[_type == "article" && slug.current == $slug][0]{
+// Changed type to "news"
+const query = `*[_type == "news" && slug.current == $slug][0]{
   title,
   summary,
   publishedAt,
@@ -16,7 +16,6 @@ const query = `*[_type == "article" && slug.current == $slug][0]{
   body
 }`;
 
-// 2. Generate Standard SEO Metadata
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const article = await client.fetch(query, { slug: params.slug });
 
@@ -33,7 +32,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-// 3. Main Page Component
 export default async function ArticlePage({ params }: { params: { slug: string } }) {
   const article = await client.fetch(query, { slug: params.slug });
 
@@ -41,7 +39,6 @@ export default async function ArticlePage({ params }: { params: { slug: string }
     notFound();
   }
 
-  // 4. Build the Google News JSON-LD Object
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -66,13 +63,11 @@ export default async function ArticlePage({ params }: { params: { slug: string }
 
   return (
     <article className="max-w-4xl mx-auto px-6 py-12">
-      {/* 🔥 THE INVISIBLE GOOGLE NEWS SCRIPT */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       
-      {/* --- VISIBLE ARTICLE HEADER --- */}
       <header className="mb-10">
         <div className="flex items-center gap-4 mb-6 text-xs font-bold uppercase tracking-widest text-[#C8102E]">
           <span>{article.category || 'News'}</span>
@@ -93,7 +88,6 @@ export default async function ArticlePage({ params }: { params: { slug: string }
         </div>
       </header>
 
-      {/* --- MAIN IMAGE --- */}
       {article.mainImage && (
         <div className="relative w-full aspect-video mb-12 rounded-lg overflow-hidden border-b-4 border-[#C8102E]">
           <Image
@@ -106,12 +100,10 @@ export default async function ArticlePage({ params }: { params: { slug: string }
         </div>
       )}
 
-      {/* --- ARTICLE BODY --- */}
       <div className="prose prose-lg dark:prose-invert max-w-none">
         <PortableText value={article.body} />
       </div>
 
-      {/* --- AUTHOR BIO SECTION --- */}
       <hr className="my-12 border-gray-200 dark:border-gray-800" />
       
       <div className="bg-gray-50 dark:bg-[#1a1b23] p-8 rounded-xl border-l-4 border-[#C8102E]">

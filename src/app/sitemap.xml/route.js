@@ -3,15 +3,14 @@ import { client } from '../../sanity/lib/client';
 export async function GET() {
   const baseUrl = 'https://www.geotrexx.com';
   
-  // 1. Fetch all your published articles from Sanity
-  const query = `*[_type == "article" && defined(slug.current)]{
+  // Changed type to "news"
+  const query = `*[_type == "news" && defined(slug.current)]{
     "slug": slug.current,
     publishedAt
   }`;
   
   const articles = await client.fetch(query);
 
-  // 2. Loop through every article and map it to your /news/ route
   const articleUrls = articles.map((article) => {
     return `
   <url>
@@ -22,7 +21,6 @@ export async function GET() {
   </url>`;
   }).join('');
 
-  // 3. Combine the static category pages with your dynamic news pages
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
