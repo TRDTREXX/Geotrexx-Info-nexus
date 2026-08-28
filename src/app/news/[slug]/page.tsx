@@ -1,7 +1,6 @@
 import { client } from '../../../sanity/lib/client';
 import { urlFor } from '../../../sanity/lib/image';
 import { PortableText } from '@portabletext/react';
-import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Image from 'next/image';
 
@@ -37,7 +36,28 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const article = await client.fetch(query, { slug: resolvedParams.slug });
 
   if (!article) {
-    notFound();
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-32 text-center">
+        <h1 className="text-3xl md:text-5xl font-black text-[#C8102E] uppercase tracking-tighter mb-4">
+          Data Disconnect
+        </h1>
+        <div className="inline-block bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 mt-4">
+          <code className="text-xl md:text-2xl font-mono font-bold text-black dark:text-white">
+            {resolvedParams.slug}
+          </code>
+        </div>
+      </div>
+    );
+  }
+
+  // --- AUTOMATIC AUTHOR IMAGE DETECTION FOR THE HEADER ---
+  const authorNameLower = (article.authorName || '').toLowerCase();
+  let authorStaticImg = null;
+  
+  if (authorNameLower.includes('orpheus')) {
+    authorStaticImg = '/orpheus.jpg';
+  } else if (authorNameLower.includes('quist')) {
+    authorStaticImg = '/quist.jpg';
   }
 
   const jsonLd = {
@@ -84,8 +104,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           {article.summary}
         </p>
 
-        <div className="text-sm font-bold text-gray-800 dark:text-gray-300">
-          By {article.authorName || 'GEOTREXX Desk'}
+        {/* --- HEADER AUTHOR (Image & Name at the top) --- */}
+        <div className="flex items-center gap-3 text-sm font-bold text-gray-800 dark:text-gray-300 uppercase">
+          {authorStaticImg && (
+            <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+              <Image src={authorStaticImg} alt={article.authorName || 'Author'} fill className="object-cover" />
+            </div>
+          )}
+          <span>By {article.authorName || 'GEOTREXX Desk'}</span>
         </div>
       </header>
 
@@ -101,32 +127,11 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </div>
       )}
 
+      {/* --- ARTICLE BODY --- */}
       <div className="prose prose-lg dark:prose-invert max-w-none">
         <PortableText value={article.body} />
       </div>
 
-      <hr className="my-12 border-gray-200 dark:border-gray-800" />
-      
-      <div className="bg-gray-50 dark:bg-[#1a1b23] p-8 rounded-xl border-l-4 border-[#C8102E]">
-        <h3 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4">
-          About the Author
-        </h3>
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="flex-1">
-            <h4 className="text-xl font-bold text-black dark:text-white mb-2">
-              {article.authorName || 'GEOTREXX Desk'}
-            </h4>
-            <p className="text-gray-600 dark:text-gray-400 font-medium leading-relaxed text-sm">
-              {article.authorName === 'Orpheus Grant-Essilfie' 
-                ? "Orpheus Grant-Essilfie is the Co-Founder and Editor-in-Chief of GEOTREXX Media Group. He brings sharp analytical rigor to digital journalism, overseeing the platform's editorial direction. He specializes in political analysis, structural governance, and data-driven sports reporting, ensuring authoritative coverage across all major categories."
-                : article.authorName === 'Quist Ebenezer Assan' 
-                ? "Quist Ebenezer Assan is the Co-Founder and Managing Editor of GEOTREXX Media Group. With a strong foundation in digital media operations and content strategy, he drives the day-to-day editorial workflow. He is dedicated to maintaining the desk's standard for fast, accurate, and unbiased reporting."
-                : "The GEOTREXX Desk delivers fast, unbiased, and authoritative news covering Ghana, global politics, business, and sports."
-              }
-            </p>
-          </div>
-        </div>
-      </div>
     </article>
   );
 }
