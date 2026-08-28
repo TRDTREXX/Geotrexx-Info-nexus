@@ -18,8 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ section: 
   };
 }
 
-// Fix: Looking for "post" in the database
-const query = `*[_type == "post" && category == $section] | order(publishedAt desc) {
+const query = `*[_type == "article" && category == $section] | order(publishedAt desc) {
   _id,
   title,
   summary,
