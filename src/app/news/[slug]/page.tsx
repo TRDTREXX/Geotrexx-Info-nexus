@@ -4,11 +4,13 @@ import { PortableText } from '@portabletext/react';
 import { Metadata } from 'next';
 import Image from 'next/image';
 
+// 1. Updated query to include mainSection
 const query = `*[_type == "article" && slug.current == $slug][0]{
   title,
   summary,
   publishedAt,
   category,
+  mainSection,
   "authorName": author->name,
   mainImage,
   body
@@ -91,7 +93,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       
       <header className="mb-10">
         <div className="flex items-center gap-4 mb-6 text-xs font-bold uppercase tracking-widest text-[#C8102E]">
-          <span>{article.category || 'News'}</span>
+          {/* FIX: Prioritizes mainSection, then falls back to category, then News */}
+          <span>{article.mainSection || article.category || 'News'}</span>
           <span>•</span>
           <span>{new Date(article.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
