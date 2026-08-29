@@ -17,24 +17,36 @@ export async function generateMetadata({ params }: { params: Promise<{ section: 
   };
 }
 
-const query = `*[_type == "article" && category == $section] | order(publishedAt desc) {
+// 🔥 UPDATED QUERY: Now searches the main category AND every single subsection field
+const query = `*[_type == "article" && (
+  category == $section ||
+  subGhana == $section ||
+  subPolitics == $section ||
+  subSports == $section ||
+  subStem == $section ||
+  subEntertainment == $section ||
+  subWorld == $section ||
+  subOpinion == $section ||
+  subBusiness == $section
+)] | order(publishedAt desc) {
   _id,
   title,
   summary,
   "slug": slug.current,
   publishedAt,
+  category,
+  "subsection": coalesce(subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness),
   mainImage
 }`;
 
 export default async function CategoryPage({ params }: { params: Promise<{ section: string }> }) {
   const resolvedParams = await params;
-  // Safety check: force the URL param to lowercase (e.g., "World" becomes "world") to match the database exactly
   const safeSection = resolvedParams.section.toLowerCase(); 
   
   const articles = await client.fetch(
     query, 
     { section: safeSection },
-    { cache: 'no-store' } // Bypass Sanity cache
+    { cache: 'no-store' } 
   );
   
   const categoryTitle = safeSection.charAt(0).toUpperCase() + safeSection.slice(1);
@@ -43,18 +55,22 @@ export default async function CategoryPage({ params }: { params: Promise<{ secti
     <div className="max-w-6xl mx-auto px-6 py-12">
       <header className="mb-12 border-b-4 border-[#C8102E] pb-4 inline-block">
         <h1 className="text-4xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter">
-          {categoryTitle}
+          {categoryTitle.replace('-', ' ')}
         </h1>
       </header>
 
       {articles.length === 0 ? (
-        <p className="text-gray-500 font-medium text-lg">No articles published in this category yet.</p>
+        <p className="text-gray-500 font-medium text-lg">Stories are currently being updated for this section. Check back soon.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {articles.map((article: any) => (
             <Link href={`/news/${article.slug}`} key={article._id} className="group flex flex-col gap-4">
               {article.mainImage && (
                 <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                  {/* Category Tag Overlay (Like on your homepage) */}
+                  <div className="absolute top-4 left-4 z-10 bg-[#C8102E] text-white text-[10px] font-black uppercase tracking-widest px-2 py-1">
+                    {article.category || 'NEWS'}
+                  </div>
                   <Image
                     src={urlFor(article.mainImage).url()}
                     alt={article.title}
