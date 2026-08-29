@@ -54,7 +54,6 @@ export default async function HomePage() {
     );
   }
 
-  const breakingArticles = articles.slice(0, 6);
   const featuredArticle = articles[0];
   const trendingArticles = articles.slice(1, 5);
   
@@ -69,23 +68,6 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* BREAKING NEWS TICKER */}
-      <div className="w-full bg-[#C8102E] text-white py-2 px-4 flex items-center overflow-hidden">
-        <div className="flex items-center gap-2 mr-6 font-black uppercase text-[11px] tracking-widest shrink-0">
-          <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-          BREAKING
-        </div>
-        <div className="flex gap-6 overflow-x-auto whitespace-nowrap text-sm font-bold items-center no-scrollbar">
-          {breakingArticles.map((a: any) => (
-            <Link href={`/news/${a.slug}`} key={a._id} className="hover:underline flex items-center gap-6">
-              <span>{a.title}</span>
-              <span className="text-white/50">•</span>
-            </Link>
-          ))}
-          <span className="text-white/90">GEOTREXX: THE TRUTH FIRST</span>
-        </div>
-      </div>
-
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
         
         {/* TOP GRID: HERO & TRENDING */}
@@ -145,7 +127,7 @@ export default async function HomePage() {
           <CategoryBlock title="SPORTS" articles={sportsArticles} />
         </div>
 
-        {/* --- 4. NEW: MORE LATEST STORIES WALL --- */}
+        {/* --- MORE LATEST STORIES WALL --- */}
         {moreLatestArticles.length > 0 && (
           <div className="mt-20 pt-12 border-t border-gray-200 dark:border-gray-800">
             <div className="flex items-center gap-3 mb-10">
