@@ -4,6 +4,9 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 
+// 🔥 Kills the page cache so new articles show up instantly
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ params }: { params: Promise<{ section: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
   const categoryName = resolvedParams.section.charAt(0).toUpperCase() + resolvedParams.section.slice(1);
@@ -11,10 +14,6 @@ export async function generateMetadata({ params }: { params: Promise<{ section: 
   return {
     title: `${categoryName} News | GEOTREXX`,
     description: `Read the latest breaking news, in-depth analysis, and authoritative updates about ${categoryName} from the GEOTREXX desk.`,
-    openGraph: {
-      title: `${categoryName} News | GEOTREXX`,
-      description: `Read the latest breaking news, in-depth analysis, and authoritative updates about ${categoryName} from the GEOTREXX desk.`,
-    }
   };
 }
 
@@ -29,8 +28,16 @@ const query = `*[_type == "article" && category == $section] | order(publishedAt
 
 export default async function CategoryPage({ params }: { params: Promise<{ section: string }> }) {
   const resolvedParams = await params;
-  const articles = await client.fetch(query, { section: resolvedParams.section });
-  const categoryTitle = resolvedParams.section.charAt(0).toUpperCase() + resolvedParams.section.slice(1);
+  // Safety check: force the URL param to lowercase (e.g., "World" becomes "world") to match the database exactly
+  const safeSection = resolvedParams.section.toLowerCase(); 
+  
+  const articles = await client.fetch(
+    query, 
+    { section: safeSection },
+    { cache: 'no-store' } // Bypass Sanity cache
+  );
+  
+  const categoryTitle = safeSection.charAt(0).toUpperCase() + safeSection.slice(1);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">

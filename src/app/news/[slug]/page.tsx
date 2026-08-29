@@ -4,7 +4,9 @@ import { PortableText } from '@portabletext/react';
 import { Metadata } from 'next';
 import Image from 'next/image';
 
-// 1. Updated query pulling the exact schema fields with the new conditional subsections
+// 🔥 Kills the page cache so new edits show up instantly
+export const dynamic = 'force-dynamic';
+
 const query = `*[_type == "article" && slug.current == $slug][0]{
   title,
   summary,
@@ -19,23 +21,22 @@ const query = `*[_type == "article" && slug.current == $slug][0]{
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
   const article = await client.fetch(query, { slug: resolvedParams.slug });
-
   if (!article) return {};
-
   return {
     title: `${article.title} | GEOTREXX`,
     description: article.summary,
-    openGraph: {
-      title: article.title,
-      description: article.summary,
-      images: article.mainImage ? [urlFor(article.mainImage).url()] : [],
-    },
   };
 }
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const article = await client.fetch(query, { slug: resolvedParams.slug });
+  
+  // Fetches data but strictly bypasses the cache
+  const article = await client.fetch(
+    query, 
+    { slug: resolvedParams.slug },
+    { cache: 'no-store' } 
+  );
 
   if (!article) {
     return (
@@ -52,15 +53,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     );
   }
 
-  // --- AUTOMATIC AUTHOR IMAGE DETECTION ---
   const authorNameLower = (article.authorName || '').toLowerCase();
   let authorStaticImg = null;
-  
-  if (authorNameLower.includes('orpheus')) {
-    authorStaticImg = '/orpheus.png';
-  } else if (authorNameLower.includes('quist')) {
-    authorStaticImg = '/quist.png';
-  }
+  if (authorNameLower.includes('orpheus')) authorStaticImg = '/orpheus.png';
+  else if (authorNameLower.includes('quist')) authorStaticImg = '/quist.png';
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -70,31 +66,27 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     "image": article.mainImage ? [urlFor(article.mainImage).url()] : [],
     "datePublished": article.publishedAt,
     "dateModified": article.publishedAt,
-    "author": [{
-        "@type": "Person",
-        "name": article.authorName || "GEOTREXX Desk",
-    }],
+    "author": [{"@type": "Person", "name": article.authorName || "GEOTREXX Desk"}],
     "publisher": {
         "@type": "Organization",
         "name": "GEOTREXX Media Group",
-        "logo": {
-            "@type": "ImageObject",
-            "url": "https://www.geotrexx.com/logo.png" 
-        }
+        "logo": {"@type": "ImageObject", "url": "https://www.geotrexx.com/logo.png"}
     }
   };
 
   return (
     <article className="max-w-4xl mx-auto px-6 py-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       
       <header className="mb-10">
         <div className="flex items-center gap-4 mb-6 text-xs font-bold uppercase tracking-widest text-[#C8102E]">
-          {/* FIX: Prioritizes mainSection, then falls back to category, then News */}
-          <span>{article.mainSection || article.category || 'News'}</span>
+          
+          {/* THE RENDERER: Capitalizes the words and formats cleanly */}
+          <span>
+            {article.category ? article.category.toUpperCase().replace('-', ' ') : 'NEWS'}
+            {article.subsection ? ` • ${article.subsection.toUpperCase().replace('-', ' ')}` : ''}
+          </span>
+
           <span>•</span>
           <span>{new Date(article.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
@@ -107,7 +99,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           {article.summary}
         </p>
 
-        {/* --- HEADER AUTHOR (Image & Name at the top) --- */}
         <div className="flex items-center gap-3 text-sm font-bold text-gray-800 dark:text-gray-300 uppercase">
           {authorStaticImg && (
             <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
@@ -120,17 +111,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
       {article.mainImage && (
         <div className="relative w-full aspect-video mb-12 rounded-lg overflow-hidden border-b-4 border-[#C8102E]">
-          <Image
-            src={urlFor(article.mainImage).url()}
-            alt={article.title}
-            fill
-            className="object-cover"
-            priority
-          />
+          <Image src={urlFor(article.mainImage).url()} alt={article.title} fill className="object-cover" priority />
         </div>
       )}
 
-      {/* --- ARTICLE BODY --- */}
       <div className="prose prose-lg dark:prose-invert max-w-none">
         <PortableText value={article.body} />
       </div>
