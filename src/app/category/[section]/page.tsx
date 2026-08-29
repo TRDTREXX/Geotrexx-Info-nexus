@@ -10,14 +10,12 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: { params: Promise<{ section: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
   const categoryName = resolvedParams.section.charAt(0).toUpperCase() + resolvedParams.section.slice(1);
-
   return {
     title: `${categoryName} News | GEOTREXX`,
     description: `Read the latest breaking news, in-depth analysis, and authoritative updates about ${categoryName} from the GEOTREXX desk.`,
   };
 }
 
-// 🔥 UPDATED QUERY: Now searches the main category AND every single subsection field
 const query = `*[_type == "article" && (
   category == $section ||
   subGhana == $section ||
@@ -41,14 +39,17 @@ const query = `*[_type == "article" && (
 
 export default async function CategoryPage({ params }: { params: Promise<{ section: string }> }) {
   const resolvedParams = await params;
-  const safeSection = resolvedParams.section.toLowerCase(); 
+  let safeSection = resolvedParams.section.toLowerCase(); 
   
-  const articles = await client.fetch(
-    query, 
-    { section: safeSection },
-    { cache: 'no-store' } 
-  );
+  // 🔥 THE TAB FIX: Strips frontend URL prefixes so "world-africa" perfectly matches "africa" in the database
+  const stripPrefixes = ['world-', 'ghana-', 'sports-', 'stem-', 'entertainment-', 'opinion-', 'business-', 'politics-'];
+  for (const prefix of stripPrefixes) {
+    if (safeSection.startsWith(prefix) && safeSection !== 'ghana-politics') {
+      safeSection = safeSection.replace(prefix, '');
+    }
+  }
   
+  const articles = await client.fetch(query, { section: safeSection }, { cache: 'no-store' });
   const categoryTitle = safeSection.charAt(0).toUpperCase() + safeSection.slice(1);
 
   return (
@@ -60,23 +61,20 @@ export default async function CategoryPage({ params }: { params: Promise<{ secti
       </header>
 
       {articles.length === 0 ? (
-        <p className="text-gray-500 font-medium text-lg">Stories are currently being updated for this section. Check back soon.</p>
+        <div className="text-center py-20 bg-gray-50 dark:bg-[#1a1b23] rounded-xl border border-gray-200 dark:border-gray-800">
+          <p className="text-gray-500 font-medium text-lg">Stories are currently being updated for this section.</p>
+          <p className="text-gray-400 text-sm mt-2">Check back soon for the latest {categoryTitle.toUpperCase()} coverage.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {articles.map((article: any) => (
             <Link href={`/news/${article.slug}`} key={article._id} className="group flex flex-col gap-4">
               {article.mainImage && (
                 <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                  {/* Category Tag Overlay (Like on your homepage) */}
-                  <div className="absolute top-4 left-4 z-10 bg-[#C8102E] text-white text-[10px] font-black uppercase tracking-widest px-2 py-1">
+                  <div className="absolute top-4 left-4 z-10 bg-[#C8102E] text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-sm shadow-sm">
                     {article.category || 'NEWS'}
                   </div>
-                  <Image
-                    src={urlFor(article.mainImage).url()}
-                    alt={article.title}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
+                  <Image src={urlFor(article.mainImage).url()} alt={article.title} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                 </div>
               )}
               <div>
