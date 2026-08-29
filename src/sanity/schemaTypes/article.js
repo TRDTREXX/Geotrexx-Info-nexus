@@ -40,7 +40,7 @@ export default {
       },
     },
     
-    // --- MAIN SECTIONS ---
+    // --- MAIN SECTION ---
     {
       name: 'category',
       title: 'Main Section',
@@ -60,15 +60,14 @@ export default {
       },
     },
     
-    // --- SUBSECTIONS (Fully Mapped to GEOTREXX Navigation) ---
+    // --- DYNAMIC SUBSECTIONS ---
     {
-      name: 'subsection',
-      title: 'Subsection',
+      name: 'subGhana',
+      title: 'Ghana Subsection',
       type: 'string',
-      hidden: ({ document }) => !document?.category, 
+      hidden: ({ document }) => document?.category !== 'ghana',
       options: {
         list: [
-          // GHANA
           { title: 'Ghana: Latest', value: 'latest' },
           { title: 'Ghana: Accra', value: 'accra' },
           { title: 'Ghana: Regions', value: 'regions' },
@@ -76,15 +75,31 @@ export default {
           { title: 'Ghana: Education', value: 'education' },
           { title: 'Ghana: Health', value: 'health' },
           { title: 'Ghana: Crime & Security', value: 'crime-security' },
-
-          // POLITICS
+        ],
+      },
+    },
+    {
+      name: 'subPolitics',
+      title: 'Politics Subsection',
+      type: 'string',
+      hidden: ({ document }) => document?.category !== 'politics',
+      options: {
+        list: [
           { title: 'Politics: Ghana Politics', value: 'ghana-politics' },
           { title: 'Politics: Government', value: 'government' },
           { title: 'Politics: Parliament', value: 'parliament' },
           { title: 'Politics: Elections', value: 'elections' },
           { title: 'Politics: Political Analysis', value: 'political-analysis' },
-          
-          // SPORTS
+        ],
+      },
+    },
+    {
+      name: 'subSports',
+      title: 'Sports Subsection',
+      type: 'string',
+      hidden: ({ document }) => document?.category !== 'sports',
+      options: {
+        list: [
           { title: 'Sports: Football', value: 'football' },
           { title: 'Sports: Transfers', value: 'transfers' },
           { title: 'Sports: Basketball', value: 'basketball' },
@@ -92,8 +107,16 @@ export default {
           { title: 'Sports: Boxing', value: 'boxing' },
           { title: 'Sports: Athletics', value: 'athletics' },
           { title: 'Sports: Motorsport', value: 'motorsport' },
-
-          // STEM
+        ],
+      },
+    },
+    {
+      name: 'subStem',
+      title: 'STEM Subsection',
+      type: 'string',
+      hidden: ({ document }) => document?.category !== 'stem',
+      options: {
+        list: [
           { title: 'STEM: Science', value: 'science' },
           { title: 'STEM: Technology', value: 'technology' },
           { title: 'STEM: Engineering', value: 'engineering' },
@@ -101,34 +124,65 @@ export default {
           { title: 'STEM: AI', value: 'ai' },
           { title: 'STEM: Innovation', value: 'innovation' },
           { title: 'STEM: Space', value: 'space' },
-
-          // ENTERTAINMENT
+        ],
+      },
+    },
+    {
+      name: 'subEntertainment',
+      title: 'Entertainment Subsection',
+      type: 'string',
+      hidden: ({ document }) => document?.category !== 'entertainment',
+      options: {
+        list: [
           { title: 'Entertainment: Music', value: 'music' },
           { title: 'Entertainment: Movies & TV', value: 'movies-tv' },
           { title: 'Entertainment: Celebrity', value: 'celebrity' },
           { title: 'Entertainment: Arts', value: 'arts' },
           { title: 'Entertainment: Lifestyle', value: 'lifestyle' },
-
-          // WORLD
+        ],
+      },
+    },
+    {
+      name: 'subWorld',
+      title: 'World Subsection',
+      type: 'string',
+      hidden: ({ document }) => document?.category !== 'world',
+      options: {
+        list: [
           { title: 'World: Africa', value: 'africa' },
           { title: 'World: Europe', value: 'europe' },
           { title: 'World: Americas', value: 'americas' },
           { title: 'World: Asia', value: 'asia' },
           { title: 'World: Middle East', value: 'middle-east' },
           { title: 'World: International', value: 'international' },
-
-          // OPINION
+        ],
+      },
+    },
+    {
+      name: 'subOpinion',
+      title: 'Opinion Subsection',
+      type: 'string',
+      hidden: ({ document }) => document?.category !== 'opinion',
+      options: {
+        list: [
           { title: 'Opinion: Editorial', value: 'editorial' },
           { title: 'Opinion: Analysis', value: 'analysis' },
           { title: 'Opinion: Commentary', value: 'commentary' },
           { title: 'Opinion: Columns', value: 'columns' },
-          
-          // BUSINESS
+        ],
+      },
+    },
+    {
+      name: 'subBusiness',
+      title: 'Business Subsection',
+      type: 'string',
+      hidden: ({ document }) => document?.category !== 'business',
+      options: {
+        list: [
           { title: 'Business: Finance', value: 'finance' },
           { title: 'Business: Economy', value: 'economy' },
           { title: 'Business: Markets', value: 'markets' },
         ],
-        layout: 'dropdown',
       },
     },
     
@@ -137,8 +191,6 @@ export default {
       title: 'Published at',
       type: 'datetime',
     },
-    
-    // 🔥 THE FIX: Stripped down to the absolute bare minimum so the upload button renders inline
     {
       name: 'body',
       title: 'Body',

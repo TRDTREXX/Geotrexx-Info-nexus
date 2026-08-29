@@ -4,13 +4,13 @@ import { PortableText } from '@portabletext/react';
 import { Metadata } from 'next';
 import Image from 'next/image';
 
-// 1. Updated query to include mainSection
+// 1. Updated query pulling the exact schema fields with the new conditional subsections
 const query = `*[_type == "article" && slug.current == $slug][0]{
   title,
   summary,
   publishedAt,
   category,
-  mainSection,
+  "subsection": coalesce(subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness),
   "authorName": author->name,
   mainImage,
   body
