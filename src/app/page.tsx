@@ -1,173 +1,166 @@
-import { client } from '../sanity/lib/client';
-import { urlFor } from '../sanity/lib/image';
-import Link from 'next/link';
+import { client } from '../../../sanity/lib/client';
+import { urlFor } from '../../../sanity/lib/image';
+import { PortableText } from '@portabletext/react';
+import { Metadata } from 'next';
 import Image from 'next/image';
 
 export const dynamic = 'force-dynamic';
 
-const query = `*[_type == "article"] | order(publishedAt desc) {
-  _id,
+const query = `*[_type == "article" && slug.current == $slug][0]{
   title,
   summary,
-  "slug": slug.current,
   publishedAt,
   category,
-  mainImage
-}[0...50]`;
+  "subsection": coalesce(subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness),
+  "authorName": author->name,
+  mainImage,
+  body
+}`;
 
-const CategoryBlock = ({ title, articles }: { title: string, articles: any[] }) => {
-  if (!articles || articles.length === 0) return null;
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3 border-b-[3px] border-gray-200 dark:border-gray-800 pb-2 mb-2">
-        <div className="w-3.5 h-3.5 bg-[#C8102E]"></div>
-        <h3 className="text-xl font-black text-black dark:text-white uppercase tracking-tighter">
-          {title}
-        </h3>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {articles.map((article: any) => (
-          <Link href={`/news/${article.slug}`} key={article._id} className="group flex flex-col gap-3">
-             {article.mainImage && (
-               <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                  <Image src={urlFor(article.mainImage).url()} alt={article.title} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
-               </div>
-             )}
-             <h4 className="text-sm font-bold text-black dark:text-white leading-snug group-hover:text-[#C8102E] transition-colors line-clamp-3">
-                {article.title}
-             </h4>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
+// --- FIX 1: RESTORED OPEN GRAPH METADATA (FOR LINK PREVIEWS) ---
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const article = await client.fetch(query, { slug: resolvedParams.slug });
+  
+  if (!article) return {};
+
+  const imageUrl = article.mainImage ? urlFor(article.mainImage).url() : 'https://www.geotrexx.com/logo.png';
+
+  return {
+    title: `${article.title} | GEOTREXX`,
+    description: article.summary,
+    openGraph: {
+      title: `${article.title} | GEOTREXX`,
+      description: article.summary,
+      url: `https://www.geotrexx.com/news/${resolvedParams.slug}`,
+      type: 'article',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: article.title,
+        }
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description: article.summary,
+      images: [imageUrl],
+    }
+  };
+}
+
+// --- FIX 2: INLINE IMAGE TRANSLATOR FOR PORTABLE TEXT ---
+const ptComponents = {
+  types: {
+    image: ({ value }: any) => {
+      if (!value?.asset?._ref) {
+        return null;
+      }
+      return (
+        <div className="relative w-full aspect-video my-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-md">
+          <Image
+            src={urlFor(value).url()}
+            alt={value.alt || 'Article inline image'}
+            fill
+            className="object-cover"
+          />
+        </div>
+      );
+    },
+  },
 };
 
-export default async function HomePage() {
-  const articles = await client.fetch(query, {}, { cache: 'no-store' });
+export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params;
+  
+  const article = await client.fetch(
+    query, 
+    { slug: resolvedParams.slug },
+    { cache: 'no-store' } 
+  );
 
-  if (!articles || articles.length === 0) {
+  if (!article) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-32 text-center">
-        <h1 className="text-3xl font-black text-black dark:text-white uppercase">No Articles Published</h1>
+      <div className="max-w-4xl mx-auto px-6 py-32 text-center">
+        <h1 className="text-3xl md:text-5xl font-black text-[#C8102E] uppercase tracking-tighter mb-4">
+          Data Disconnect
+        </h1>
+        <div className="inline-block bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 mt-4">
+          <code className="text-xl md:text-2xl font-mono font-bold text-black dark:text-white">
+            {resolvedParams.slug}
+          </code>
+        </div>
       </div>
     );
   }
 
-  const featuredArticle = articles[0];
-  const trendingArticles = articles.slice(1, 5);
-  
-  // Category Grids
-  const ghanaArticles = articles.filter((a: any) => a.category === 'ghana').slice(0, 4);
-  const politicsArticles = articles.filter((a: any) => a.category === 'politics').slice(0, 4);
-  const businessArticles = articles.filter((a: any) => a.category === 'business').slice(0, 4);
-  const sportsArticles = articles.filter((a: any) => a.category === 'sports').slice(0, 4);
+  const authorNameLower = (article.authorName || '').toLowerCase();
+  let authorStaticImg = null;
+  if (authorNameLower.includes('orpheus')) authorStaticImg = '/orpheus.png';
+  else if (authorNameLower.includes('quist')) authorStaticImg = '/quist.png';
 
-  // The Wall of News: Grab the next 16 articles that aren't in the Hero or Trending
-  const moreLatestArticles = articles.slice(5, 21);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    "headline": article.title,
+    "description": article.summary,
+    "image": article.mainImage ? [urlFor(article.mainImage).url()] : [],
+    "datePublished": article.publishedAt,
+    "dateModified": article.publishedAt,
+    "author": [{"@type": "Person", "name": article.authorName || "GEOTREXX Desk"}],
+    "publisher": {
+        "@type": "Organization",
+        "name": "GEOTREXX Media Group",
+        "logo": {"@type": "ImageObject", "url": "https://www.geotrexx.com/logo.png"}
+    }
+  };
 
   return (
-    <div>
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
+    <article className="max-w-4xl mx-auto px-6 py-12">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      
+      <header className="mb-10">
+        <div className="flex items-center gap-4 mb-6 text-xs font-bold uppercase tracking-widest text-[#C8102E]">
+          <span>
+            {article.category ? article.category.toUpperCase().replace('-', ' ') : 'NEWS'}
+            {article.subsection ? ` • ${article.subsection.toUpperCase().replace('-', ' ')}` : ''}
+          </span>
+          <span>•</span>
+          <span>{new Date(article.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+        </div>
         
-        {/* TOP GRID: HERO & TRENDING */}
-        <div className="flex flex-col lg:flex-row gap-6 mb-16">
-          
-          {/* HERO ARTICLE */}
-          {featuredArticle && (
-            <Link href={`/news/${featuredArticle.slug}`} className="relative w-full lg:w-2/3 aspect-[4/3] lg:aspect-[16/9] rounded-xl overflow-hidden group shadow-sm">
-              {featuredArticle.mainImage && (
-                <Image src={urlFor(featuredArticle.mainImage).url()} alt={featuredArticle.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" priority />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
-              
-              <div className="absolute bottom-0 left-0 p-6 md:p-10 w-full md:w-5/6">
-                <div className="bg-[#C8102E] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 mb-4 inline-block rounded-sm">
-                  {featuredArticle.category ? featuredArticle.category.toUpperCase() : 'NEWS'}
-                </div>
-                <h2 className="text-3xl md:text-5xl lg:text-[54px] font-black text-white leading-tight tracking-tighter drop-shadow-md">
-                  {featuredArticle.title}
-                </h2>
-              </div>
-            </Link>
-          )}
+        <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-6 text-black dark:text-white leading-tight">
+          {article.title}
+        </h1>
+        
+        <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 font-medium leading-relaxed mb-6">
+          {article.summary}
+        </p>
 
-          {/* TRENDING NOW SIDEBAR */}
-          {trendingArticles.length > 0 && (
-            <div className="w-full lg:w-1/3 bg-white dark:bg-[#121212] border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm p-6 md:p-8 flex flex-col">
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
-                <div className="w-2 h-2 rounded-full bg-[#C8102E] animate-pulse"></div>
-                <h3 className="text-xs font-black text-black dark:text-white uppercase tracking-widest">
-                  Trending Now
-                </h3>
-              </div>
-              <div className="flex flex-col gap-6">
-                {trendingArticles.map((article: any, index: number) => (
-                  <div key={article._id} className={`${index !== trendingArticles.length - 1 ? 'border-b border-gray-100 dark:border-gray-800 pb-6' : ''}`}>
-                    <Link href={`/news/${article.slug}`} className="group flex flex-col gap-2">
-                      <span className="text-[10px] font-black text-[#C8102E] uppercase tracking-widest">
-                        {article.category ? article.category.toUpperCase() : 'NEWS'}
-                      </span>
-                      <h4 className="text-sm md:text-base font-bold text-black dark:text-white leading-snug group-hover:text-[#C8102E] transition-colors">
-                        {article.title}
-                      </h4>
-                    </Link>
-                  </div>
-                ))}
-              </div>
+        <div className="flex items-center gap-3 text-sm font-bold text-gray-800 dark:text-gray-300 uppercase">
+          {authorStaticImg && (
+            <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+              <Image src={authorStaticImg} alt={article.authorName || 'Author'} fill className="object-cover" />
             </div>
           )}
+          <span>By {article.authorName || 'GEOTREXX Desk'}</span>
         </div>
+      </header>
 
-        {/* CATEGORY GRIDS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-16">
-          <CategoryBlock title="GHANA" articles={ghanaArticles} />
-          <CategoryBlock title="POLITICS" articles={politicsArticles} />
-          <CategoryBlock title="BUSINESS" articles={businessArticles} />
-          <CategoryBlock title="SPORTS" articles={sportsArticles} />
+      {article.mainImage && (
+        <div className="relative w-full aspect-video mb-12 rounded-lg overflow-hidden border-b-4 border-[#C8102E]">
+          <Image src={urlFor(article.mainImage).url()} alt={article.title} fill className="object-cover" priority />
         </div>
+      )}
 
-        {/* --- MORE LATEST STORIES WALL --- */}
-        {moreLatestArticles.length > 0 && (
-          <div className="mt-20 pt-12 border-t border-gray-200 dark:border-gray-800">
-            <div className="flex items-center gap-3 mb-10">
-              <div className="w-3 h-3 bg-black dark:bg-white"></div>
-              <h3 className="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tighter">
-                More Latest Stories
-              </h3>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-              {moreLatestArticles.map((article: any) => (
-                <Link href={`/news/${article.slug}`} key={article._id} className="group flex flex-col gap-3">
-                  {article.mainImage && (
-                    <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                      <div className="absolute top-3 left-3 z-10 bg-[#C8102E] text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-sm shadow-sm">
-                        {article.category || 'NEWS'}
-                      </div>
-                      <Image 
-                        src={urlFor(article.mainImage).url()} 
-                        alt={article.title} 
-                        fill 
-                        className="object-cover transition-transform duration-300 group-hover:scale-105" 
-                      />
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                      {new Date(article.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                    </p>
-                    <h4 className="text-base font-bold text-black dark:text-white leading-snug group-hover:text-[#C8102E] transition-colors line-clamp-3">
-                      {article.title}
-                    </h4>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
+      {/* --- INLINE IMAGES NOW RENDER PERFECTLY WITH ptComponents --- */}
+      <div className="prose prose-lg dark:prose-invert max-w-none">
+        <PortableText value={article.body} components={ptComponents} />
       </div>
-    </div>
+
+    </article>
   );
 }
