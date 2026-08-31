@@ -1,9 +1,8 @@
-import { client } from '../../../sanity/lib/client';
-import { urlFor } from '../../../sanity/lib/image';
+import { client } from '../sanity/lib/client';
+import { urlFor } from '../sanity/lib/image';
 import { PortableText } from '@portabletext/react';
 import { Metadata } from 'next';
 import Image from 'next/image';
-
 export const dynamic = 'force-dynamic';
 
 const query = `*[_type == "article" && slug.current == $slug][0]{
