@@ -4,7 +4,6 @@ import { PortableText } from '@portabletext/react';
 import { Metadata } from 'next';
 import Image from 'next/image';
 
-// 🔥 Kills the page cache so new edits show up instantly
 export const dynamic = 'force-dynamic';
 
 const query = `*[_type == "article" && slug.current == $slug][0]{
@@ -18,20 +17,71 @@ const query = `*[_type == "article" && slug.current == $slug][0]{
   body
 }`;
 
+// --- THE METADATA FIX: Optimizing for WhatsApp/Twitter scrapers ---
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
   const article = await client.fetch(query, { slug: resolvedParams.slug });
+  
   if (!article) return {};
+
+  // MAGIC BULLET: Forces Sanity to deliver a perfectly sized, compressed JPG for social media
+  const imageUrl = article.mainImage 
+    ? urlFor(article.mainImage).width(1200).height(630).format('jpg').quality(80).url()
+    : 'https://www.geotrexx.com/logo.png';
+
   return {
     title: `${article.title} | GEOTREXX`,
     description: article.summary,
+    metadataBase: new URL('https://www.geotrexx.com'),
+    openGraph: {
+      title: `${article.title} | GEOTREXX`,
+      description: article.summary,
+      url: `/news/${resolvedParams.slug}`,
+      siteName: 'GEOTREXX Media Group',
+      type: 'article',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: article.title,
+        }
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description: article.summary,
+      images: [imageUrl],
+    }
   };
 }
+
+// --- INLINE IMAGE FIX: Bypassing Next.js double-cache ---
+const ptComponents = {
+  types: {
+    image: ({ value }: any) => {
+      if (!value?.asset?._ref) {
+        return null;
+      }
+      return (
+        <div className="relative w-full aspect-video my-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-md">
+          <Image
+            src={urlFor(value).auto('format').fit('max').url()}
+            alt={value.alt || 'Article inline image'}
+            fill
+            className="object-cover"
+            unoptimized // Tells Next.js to stream straight from Sanity's CDN
+          />
+        </div>
+      );
+    },
+  },
+};
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   
-  // Fetches data but strictly bypasses the cache
   const article = await client.fetch(
     query, 
     { slug: resolvedParams.slug },
@@ -80,13 +130,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       
       <header className="mb-10">
         <div className="flex items-center gap-4 mb-6 text-xs font-bold uppercase tracking-widest text-[#C8102E]">
-          
-          {/* THE RENDERER: Capitalizes the words and formats cleanly */}
           <span>
             {article.category ? article.category.toUpperCase().replace('-', ' ') : 'NEWS'}
             {article.subsection ? ` • ${article.subsection.toUpperCase().replace('-', ' ')}` : ''}
           </span>
-
           <span>•</span>
           <span>{new Date(article.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
@@ -116,7 +163,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       )}
 
       <div className="prose prose-lg dark:prose-invert max-w-none">
-        <PortableText value={article.body} />
+        <PortableText value={article.body} components={ptComponents} />
       </div>
 
     </article>
