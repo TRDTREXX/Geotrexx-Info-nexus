@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-// --- INLINE IMAGE FIX: Bypassing Next.js double-cache ---
+// --- INLINE IMAGE FIX: Natural dimensions without cropping ---
 const ptComponents = {
   types: {
     image: ({ value }: any) => {
@@ -65,13 +65,12 @@ const ptComponents = {
         return null;
       }
       return (
-        <div className="relative w-full aspect-video my-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-md">
-          <Image
-            src={urlFor(value).auto('format').fit('max').url()}
+        <div className="my-10 w-full rounded-xl overflow-hidden shadow-md bg-gray-50 dark:bg-[#1a1b23]">
+          <img
+            src={urlFor(value).auto('format').url()}
             alt={value.alt || 'Article inline image'}
-            fill
-            className="object-cover"
-            unoptimized // Tells Next.js to stream straight from Sanity's CDN
+            className="w-full h-auto"
+            loading="lazy"
           />
         </div>
       );
