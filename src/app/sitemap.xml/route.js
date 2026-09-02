@@ -1,6 +1,6 @@
 import { client } from '../../sanity/lib/client';
 
-export const revalidate = 3600; // Revalidates the sitemap automatically every hour
+export const revalidate = 3600; 
 
 export async function GET() {
   const baseUrl = 'https://www.geotrexx.com';
@@ -12,7 +12,8 @@ export async function GET() {
   
   const articles = await client.fetch(query, {}, { next: { tags: ['articles'] } });
 
-  const articleUrls = articles.map((article: any) => `
+  // THE FIX: Removed the TypeScript ": any" annotation from the map function
+  const articleUrls = articles.map((article) => `
   <url>
     <loc>${baseUrl}/news/${article.slug}</loc>
     <lastmod>${article.publishedAt ? new Date(article.publishedAt).toISOString() : new Date().toISOString()}</lastmod>
