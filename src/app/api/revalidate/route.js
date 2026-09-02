@@ -1,9 +1,8 @@
 import { revalidateTag } from 'next/cache';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest) {
+export async function POST(req) {
   try {
-    // Optional: Add a secret token check here later to secure the webhook
     const body = await req.json();
     const categorySlug = body?.category?.slug?.current;
     
