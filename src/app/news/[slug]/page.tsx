@@ -4,13 +4,16 @@ import { PortableText } from '@portabletext/react';
 import { Metadata } from 'next';
 import Image from 'next/image';
 
-export const dynamic = 'force-dynamic';
+// Use ISR (Incremental Static Regeneration) to revalidate the cache every 60 seconds
+export const revalidate = 60;
 
 const query = `*[_type == "article" && slug.current == $slug][0]{
   title,
   summary,
   publishedAt,
-  category,
+  _updatedAt,
+  "categoryName": category->title,
+  "categorySlug": category->slug.current,
   "subsection": coalesce(subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness),
   "authorName": author->name,
   mainImage,
@@ -24,7 +27,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   
   if (!article) return {};
 
-  // MAGIC BULLET: Forces Sanity to deliver a perfectly sized, compressed JPG for social media
   const imageUrl = article.mainImage 
     ? urlFor(article.mainImage).width(1200).height(630).format('jpg').quality(80).url()
     : 'https://www.geotrexx.com/logo.png';
@@ -57,22 +59,40 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-// --- INLINE IMAGE FIX: Natural dimensions without cropping ---
+// --- BULLETPROOF INLINE IMAGE FIX ---
 const ptComponents = {
   types: {
     image: ({ value }: any) => {
-      if (!value?.asset?._ref) {
-        return null;
-      }
+      if (!value?.asset?._ref) return null;
+      
       return (
-        <div className="my-10 w-full rounded-xl overflow-hidden shadow-md bg-gray-50 dark:bg-[#1a1b23]">
-          <img
-            src={urlFor(value).auto('format').url()}
-            alt={value.alt || 'Article inline image'}
-            className="w-full h-auto"
-            loading="lazy"
-          />
-        </div>
+        <figure className="not-prose my-10 w-full clear-both">
+          <div className="w-full rounded-sm overflow-hidden bg-[#faf9f6] border border-gray-200">
+            <Image
+              src={urlFor(value).url()}
+              alt={value.alt || 'Article inline image'}
+              width={1200}
+              height={800} 
+              style={{ width: '100%', height: 'auto' }} 
+              unoptimized 
+              priority 
+            />
+          </div>
+          {(value.caption || value.attribution) && (
+            <figcaption className="mt-2.5 px-1 text-left border-l-2 border-[#C8102E] pl-3">
+              {value.caption && (
+                <p className="text-sm text-gray-700 leading-snug font-serif">
+                  {value.caption}
+                </p>
+              )}
+              {value.attribution && (
+                <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500 font-mono">
+                  Photo: {value.attribution}
+                </span>
+              )}
+            </figcaption>
+          )}
+        </figure>
       );
     },
   },
@@ -84,17 +104,17 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const article = await client.fetch(
     query, 
     { slug: resolvedParams.slug },
-    { cache: 'no-store' } 
+    { next: { tags: ['articles', `article-${resolvedParams.slug}`] } } 
   );
 
   if (!article) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-32 text-center">
-        <h1 className="text-3xl md:text-5xl font-black text-[#C8102E] uppercase tracking-tighter mb-4">
+      <div className="max-w-4xl mx-auto px-6 py-32 text-center bg-[#faf9f6]">
+        <h1 className="text-3xl md:text-5xl font-black text-[#C8102E] uppercase tracking-tighter mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
           Data Disconnect
         </h1>
-        <div className="inline-block bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 mt-4">
-          <code className="text-xl md:text-2xl font-mono font-bold text-black dark:text-white">
+        <div className="inline-block bg-white p-4 rounded-sm border border-gray-300 mt-4 shadow-sm">
+          <code className="text-xl md:text-2xl font-mono font-bold text-black">
             {resolvedParams.slug}
           </code>
         </div>
@@ -102,66 +122,99 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     );
   }
 
-  const authorNameLower = (article.authorName || '').toLowerCase();
-  let authorStaticImg = null;
-  if (authorNameLower.includes('orpheus')) authorStaticImg = '/orpheus.png';
-  else if (authorNameLower.includes('quist')) authorStaticImg = '/quist.png';
-
+  // Generate AdSense & Google News Compliant JSON-LD
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://www.geotrexx.com/news/${resolvedParams.slug}`
+    },
     "headline": article.title,
     "description": article.summary,
     "image": article.mainImage ? [urlFor(article.mainImage).url()] : [],
     "datePublished": article.publishedAt,
-    "dateModified": article.publishedAt,
-    "author": [{"@type": "Person", "name": article.authorName || "GEOTREXX Desk"}],
-    "publisher": {
-        "@type": "Organization",
+    "dateModified": article._updatedAt || article.publishedAt,
+    "author": {
+      "@type": "Person",
+      "name": article.authorName || "GEOTREXX Desk",
+      "worksFor": {
+        "@type": "NewsMediaOrganization",
         "name": "GEOTREXX Media Group",
-        "logo": {"@type": "ImageObject", "url": "https://www.geotrexx.com/logo.png"}
-    }
+        "publishingPrinciples": "https://www.geotrexx.com/standards"
+      }
+    },
+    "publisher": {
+      "@type": "NewsMediaOrganization",
+      "name": "GEOTREXX Media Group",
+      "url": "https://www.geotrexx.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.geotrexx.com/logo.png"
+      }
+    },
+    "articleSection": article.categoryName || "News"
   };
 
+  const authorNameLower = (article.authorName || '').toLowerCase();
+  let authorStaticImg = null;
+  if (authorNameLower.includes('orpheus') || authorNameLower.includes('quist')) {
+    authorStaticImg = '/orpheus.png'; 
+  }
+
   return (
-    <article className="max-w-4xl mx-auto px-6 py-12">
+    <article className="max-w-4xl mx-auto px-6 py-12 bg-[#faf9f6] text-[#121826]">
+      {/* Inject Structured Data for Google Indexing */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       
-      <header className="mb-10">
-        <div className="flex items-center gap-4 mb-6 text-xs font-bold uppercase tracking-widest text-[#C8102E]">
+      <header className="mb-10 border-b-2 border-gray-900 pb-8">
+        <div className="flex flex-wrap items-center gap-4 mb-6 text-xs font-bold uppercase tracking-widest text-[#C8102E] font-mono">
           <span>
-            {article.category ? article.category.toUpperCase().replace('-', ' ') : 'NEWS'}
+            {article.categoryName ? article.categoryName.toUpperCase() : 'NEWS'}
             {article.subsection ? ` • ${article.subsection.toUpperCase().replace('-', ' ')}` : ''}
           </span>
-          <span>•</span>
-          <span>{new Date(article.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          <span className="text-gray-400">•</span>
+          <span className="text-gray-600">
+            {new Date(article.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </span>
         </div>
         
-        <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-6 text-black dark:text-white leading-tight">
+        {/* Editorial Heading */}
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-6 text-black leading-tight" style={{ fontFamily: 'Playfair Display, Newsreader, Georgia, serif' }}>
           {article.title}
         </h1>
         
-        <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 font-medium leading-relaxed mb-6">
+        {/* Editorial Subtitle */}
+        <p className="text-lg md:text-xl text-gray-700 font-medium leading-relaxed mb-8" style={{ fontFamily: 'Newsreader, Georgia, serif' }}>
           {article.summary}
         </p>
 
-        <div className="flex items-center gap-3 text-sm font-bold text-gray-800 dark:text-gray-300 uppercase">
-          {authorStaticImg && (
-            <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-              <Image src={authorStaticImg} alt={article.authorName || 'Author'} fill className="object-cover" />
-            </div>
-          )}
-          <span>By {article.authorName || 'GEOTREXX Desk'}</span>
+        {/* Verification & Byline Box */}
+        <div className="flex items-center justify-between border-t border-gray-300 pt-4">
+          <div className="flex items-center gap-3 text-sm font-bold text-gray-900 uppercase tracking-wide font-sans">
+            {authorStaticImg && (
+              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-300">
+                <Image src={authorStaticImg} alt={article.authorName || 'Author'} fill className="object-cover" />
+              </div>
+            )}
+            <span>By {article.authorName || 'GEOTREXX Desk'}</span>
+          </div>
+          <div className="hidden md:flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-gray-500 bg-gray-100 px-2 py-1 rounded-sm border border-gray-200">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-600"></div>
+            Fact-Checked
+          </div>
         </div>
       </header>
 
+      {/* Main Image */}
       {article.mainImage && (
-        <div className="relative w-full aspect-video mb-12 rounded-lg overflow-hidden border-b-4 border-[#C8102E]">
+        <div className="relative w-full aspect-video mb-12 rounded-sm overflow-hidden border-b-4 border-[#C8102E] shadow-sm">
           <Image src={urlFor(article.mainImage).url()} alt={article.title} fill className="object-cover" priority />
         </div>
       )}
 
-      <div className="prose prose-lg dark:prose-invert max-w-none">
+      {/* Article Body */}
+      <div className="prose prose-lg max-w-none text-gray-900 leading-[1.8]" style={{ fontFamily: 'Newsreader, Georgia, serif' }}>
         <PortableText value={article.body} components={ptComponents} />
       </div>
 
