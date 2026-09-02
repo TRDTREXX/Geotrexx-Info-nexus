@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-// --- BULLETPROOF INLINE IMAGE FIX ---
+// --- BULLETPROOF INLINE IMAGE FIX (Now with Dark Mode) ---
 const ptComponents = {
   types: {
     image: ({ value }: any) => {
@@ -67,7 +67,7 @@ const ptComponents = {
       
       return (
         <figure className="not-prose my-10 w-full clear-both">
-          <div className="w-full rounded-sm overflow-hidden bg-[#faf9f6] border border-gray-200">
+          <div className="w-full rounded-sm overflow-hidden bg-[#faf9f6] dark:bg-[#0a0b10] border border-gray-200 dark:border-gray-800 transition-colors duration-300">
             <Image
               src={urlFor(value).url()}
               alt={value.alt || 'Article inline image'}
@@ -81,12 +81,12 @@ const ptComponents = {
           {(value.caption || value.attribution) && (
             <figcaption className="mt-2.5 px-1 text-left border-l-2 border-[#C8102E] pl-3">
               {value.caption && (
-                <p className="text-sm text-gray-700 leading-snug font-serif">
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug font-serif">
                   {value.caption}
                 </p>
               )}
               {value.attribution && (
-                <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500 font-mono">
+                <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 font-mono">
                   Photo: {value.attribution}
                 </span>
               )}
@@ -109,12 +109,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   if (!article) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-32 text-center bg-[#faf9f6]">
+      <div className="max-w-4xl mx-auto px-6 py-32 text-center bg-[#faf9f6] dark:bg-[#0a0b10] transition-colors duration-300 min-h-screen">
         <h1 className="text-3xl md:text-5xl font-black text-[#C8102E] uppercase tracking-tighter mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
           Data Disconnect
         </h1>
-        <div className="inline-block bg-white p-4 rounded-sm border border-gray-300 mt-4 shadow-sm">
-          <code className="text-xl md:text-2xl font-mono font-bold text-black">
+        <div className="inline-block bg-white dark:bg-[#1a1b23] p-4 rounded-sm border border-gray-300 dark:border-gray-800 mt-4 shadow-sm transition-colors duration-300">
+          <code className="text-xl md:text-2xl font-mono font-bold text-black dark:text-white">
             {resolvedParams.slug}
           </code>
         </div>
@@ -163,45 +163,41 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   }
 
   return (
-    <article className="max-w-4xl mx-auto px-6 py-12 bg-[#faf9f6] text-[#121826]">
+    <article className="max-w-4xl mx-auto px-6 py-12 bg-[#faf9f6] dark:bg-[#0a0b10] text-[#121826] dark:text-gray-200 transition-colors duration-300 min-h-screen">
       {/* Inject Structured Data for Google Indexing */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       
-      <header className="mb-10 border-b-2 border-gray-900 pb-8">
+      <header className="mb-10 border-b-2 border-gray-900 dark:border-gray-800 pb-8 transition-colors duration-300">
         <div className="flex flex-wrap items-center gap-4 mb-6 text-xs font-bold uppercase tracking-widest text-[#C8102E] font-mono">
           <span>
             {article.categoryName ? article.categoryName.toUpperCase() : 'NEWS'}
             {article.subsection ? ` • ${article.subsection.toUpperCase().replace('-', ' ')}` : ''}
           </span>
-          <span className="text-gray-400">•</span>
-          <span className="text-gray-600">
+          <span className="text-gray-400 dark:text-gray-600">•</span>
+          <span className="text-gray-600 dark:text-gray-400">
             {new Date(article.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
           </span>
         </div>
         
         {/* Editorial Heading */}
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-6 text-black leading-tight" style={{ fontFamily: 'Playfair Display, Newsreader, Georgia, serif' }}>
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-6 text-black dark:text-white leading-tight transition-colors duration-300" style={{ fontFamily: 'Playfair Display, Newsreader, Georgia, serif' }}>
           {article.title}
         </h1>
         
         {/* Editorial Subtitle */}
-        <p className="text-lg md:text-xl text-gray-700 font-medium leading-relaxed mb-8" style={{ fontFamily: 'Newsreader, Georgia, serif' }}>
+        <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 font-medium leading-relaxed mb-8 transition-colors duration-300" style={{ fontFamily: 'Newsreader, Georgia, serif' }}>
           {article.summary}
         </p>
 
-        {/* Verification & Byline Box */}
-        <div className="flex items-center justify-between border-t border-gray-300 pt-4">
-          <div className="flex items-center gap-3 text-sm font-bold text-gray-900 uppercase tracking-wide font-sans">
+        {/* Verification & Byline Box (Fact-Checked badge removed) */}
+        <div className="flex items-center justify-between border-t border-gray-300 dark:border-gray-800 pt-4 transition-colors duration-300">
+          <div className="flex items-center gap-3 text-sm font-bold text-gray-900 dark:text-gray-300 uppercase tracking-wide font-sans">
             {authorStaticImg && (
-              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-300">
+              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-300 dark:border-gray-700">
                 <Image src={authorStaticImg} alt={article.authorName || 'Author'} fill className="object-cover" />
               </div>
             )}
             <span>By {article.authorName || 'GEOTREXX Desk'}</span>
-          </div>
-          <div className="hidden md:flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-gray-500 bg-gray-100 px-2 py-1 rounded-sm border border-gray-200">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-600"></div>
-            Fact-Checked
           </div>
         </div>
       </header>
@@ -213,8 +209,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </div>
       )}
 
-      {/* Article Body */}
-      <div className="prose prose-lg max-w-none text-gray-900 leading-[1.8]" style={{ fontFamily: 'Newsreader, Georgia, serif' }}>
+      {/* Article Body (dark:prose-invert automates text color flip for dark mode) */}
+      <div className="prose prose-lg dark:prose-invert max-w-none text-gray-900 dark:text-gray-300 leading-[1.8] transition-colors duration-300" style={{ fontFamily: 'Newsreader, Georgia, serif' }}>
         <PortableText value={article.body} components={ptComponents} />
       </div>
 
