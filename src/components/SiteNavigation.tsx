@@ -11,7 +11,6 @@ export default function SiteNavigation({ tickerText = "GEOTREXX: UNBIASED, ACCUR
 
   useEffect(() => setMounted(true), []);
 
-  // Prevent scrolling when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -72,7 +71,6 @@ export default function SiteNavigation({ tickerText = "GEOTREXX: UNBIASED, ACCUR
         <div className="hidden md:block w-1/3"></div>
 
         {/* Center: Premium Logo */}
-        {/* 🔥 THE FIX: Added relative, z-50, and cursor-pointer to force clickability over anything else on the page */}
         <Link href="/" onClick={() => setMobileMenuOpen(false)} className="relative z-50 cursor-pointer flex flex-col items-center justify-center w-1/3 group">
           <img 
             src="/geotrexx-logo.png" 

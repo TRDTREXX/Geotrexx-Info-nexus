@@ -78,7 +78,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Governance & Trust (AdSense Compliance) */}
+          {/* Governance & Trust */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-black dark:text-white uppercase tracking-widest font-mono border-b border-gray-300 dark:border-gray-800 pb-2">
               Governance & Trust
@@ -93,7 +93,7 @@ export default function Footer() {
 
         </div>
 
-        {/* Legal & Compliance */}
+        {/* Legal & Compliance - Strict format to match your original */}
         <div className="mt-6 text-center text-xs font-mono text-gray-500 dark:text-gray-400">
           <p>© {currentYear} Geotrexx Media Group. All rights reserved.</p>
         </div>

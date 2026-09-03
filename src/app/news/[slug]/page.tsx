@@ -4,7 +4,6 @@ import { PortableText } from '@portabletext/react';
 import { Metadata } from 'next';
 import Image from 'next/image';
 
-// Use ISR (Incremental Static Regeneration) to revalidate the cache every 60 seconds
 export const revalidate = 60;
 
 const query = `*[_type == "article" && slug.current == $slug][0]{
@@ -20,7 +19,6 @@ const query = `*[_type == "article" && slug.current == $slug][0]{
   body
 }`;
 
-// --- THE METADATA FIX: Optimizing for WhatsApp/Twitter scrapers ---
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
   const article = await client.fetch(query, { slug: resolvedParams.slug });
@@ -41,14 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       url: `/news/${resolvedParams.slug}`,
       siteName: 'GEOTREXX Media Group',
       type: 'article',
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: article.title,
-        }
-      ],
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: article.title }],
     },
     twitter: {
       card: 'summary_large_image',
@@ -59,12 +50,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-// --- BULLETPROOF INLINE IMAGE FIX (Now with Dark Mode) ---
 const ptComponents = {
   types: {
     image: ({ value }: any) => {
       if (!value?.asset?._ref) return null;
-      
       return (
         <figure className="not-prose my-10 w-full clear-both">
           <div className="w-full rounded-sm overflow-hidden bg-[#faf9f6] dark:bg-[#0a0b10] border border-gray-200 dark:border-gray-800 transition-colors duration-300">
@@ -80,16 +69,8 @@ const ptComponents = {
           </div>
           {(value.caption || value.attribution) && (
             <figcaption className="mt-2.5 px-1 text-left border-l-2 border-[#C8102E] pl-3">
-              {value.caption && (
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug font-serif">
-                  {value.caption}
-                </p>
-              )}
-              {value.attribution && (
-                <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 font-mono">
-                  Photo: {value.attribution}
-                </span>
-              )}
+              {value.caption && <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug font-serif">{value.caption}</p>}
+              {value.attribution && <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400 font-mono">Photo: {value.attribution}</span>}
             </figcaption>
           )}
         </figure>
@@ -122,7 +103,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     );
   }
 
-  // Generate AdSense & Google News Compliant JSON-LD
+  // Generate AdSense & Google News Compliant JSON-LD (Kept completely invisible to readers)
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -164,7 +145,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   return (
     <article className="max-w-4xl mx-auto px-6 py-12 bg-[#faf9f6] dark:bg-[#0a0b10] text-[#121826] dark:text-gray-200 transition-colors duration-300 min-h-screen">
-      {/* Inject Structured Data for Google Indexing */}
+      {/* Invisible Structured Data for Google Bots only */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       
       <header className="mb-10 border-b-2 border-gray-900 dark:border-gray-800 pb-8 transition-colors duration-300">
@@ -179,17 +160,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </span>
         </div>
         
-        {/* Editorial Heading */}
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-6 text-black dark:text-white leading-tight transition-colors duration-300" style={{ fontFamily: 'Playfair Display, Newsreader, Georgia, serif' }}>
           {article.title}
         </h1>
         
-        {/* Editorial Subtitle */}
         <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 font-medium leading-relaxed mb-8 transition-colors duration-300" style={{ fontFamily: 'Newsreader, Georgia, serif' }}>
           {article.summary}
         </p>
 
-        {/* Verification & Byline Box (Fact-Checked badge removed) */}
         <div className="flex items-center justify-between border-t border-gray-300 dark:border-gray-800 pt-4 transition-colors duration-300">
           <div className="flex items-center gap-3 text-sm font-bold text-gray-900 dark:text-gray-300 uppercase tracking-wide font-sans">
             {authorStaticImg && (
@@ -202,14 +180,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </div>
       </header>
 
-      {/* Main Image */}
       {article.mainImage && (
         <div className="relative w-full aspect-video mb-12 rounded-sm overflow-hidden border-b-4 border-[#C8102E] shadow-sm">
           <Image src={urlFor(article.mainImage).url()} alt={article.title} fill className="object-cover" priority />
         </div>
       )}
 
-      {/* Article Body (dark:prose-invert automates text color flip for dark mode) */}
       <div className="prose prose-lg dark:prose-invert max-w-none text-gray-900 dark:text-gray-300 leading-[1.8] transition-colors duration-300" style={{ fontFamily: 'Newsreader, Georgia, serif' }}>
         <PortableText value={article.body} components={ptComponents} />
       </div>

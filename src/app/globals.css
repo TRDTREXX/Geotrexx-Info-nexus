@@ -1,6 +1,6 @@
 @import "tailwindcss";
-/* The Consultant's Editorial Font Injection MUST go immediately after tailwindcss */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+/* Upgraded to Oswald for PUNCHY, high-impact headlines */
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=JetBrains+Mono:wght@400;600&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 @plugin "@tailwindcss/typography";
 
@@ -13,16 +13,15 @@
   --color-geo-gray: #1a1b23;
   --color-geo-light: #f9fafb;
   
-  /* Upgraded Editorial Fonts with your original fonts as fallbacks */
+  /* Upgraded Editorial Fonts */
   --font-sans: "Plus Jakarta Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-serif: "Newsreader", Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-headline: "Playfair Display", Georgia, serif;
+  --font-headline: "Oswald", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 }
 
 body {
   color: #111827; 
-  /* Upgraded to the consultant's "warm paper" hex for a premium newspaper feel in light mode */
   background-color: #faf9f6; 
   transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
   font-family: var(--font-sans);
