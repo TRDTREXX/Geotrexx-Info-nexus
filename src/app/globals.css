@@ -1,12 +1,12 @@
-@import "tailwindcss";
-/* Upgraded to Oswald for PUNCHY, high-impact headlines */
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=JetBrains+Mono:wght@400;600&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
 
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+/* ... the rest of your colors and theme variables remain the same ... */
   /* Your Exact GEOTREXX Brand Colors */
   --color-geo-red: #C8102E;
   --color-geo-dark: #0a0b10;

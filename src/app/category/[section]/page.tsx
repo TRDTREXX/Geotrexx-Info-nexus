@@ -1,72 +1,55 @@
-import { client } from '../../../../sanity/lib/client';
-import { urlFor } from '../../../../sanity/lib/image';
+import { client } from '../../../sanity/lib/client';
+import { urlFor } from '../../../sanity/lib/image';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export const revalidate = 60;
 
-export async function generateMetadata({ params }: { params: Promise<{ section: string; subsection: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ section: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
-  const subName = resolvedParams.subsection.replace(/-/g, ' ').toUpperCase();
+  const categoryName = resolvedParams.section.replace('-', ' ').toUpperCase();
   return {
-    title: `${subName} News | GEOTREXX`,
+    title: `${categoryName} News | GEOTREXX`,
   };
 }
 
-// Queries Sanity for the specific subsection dropdowns
-const query = `*[_type == "article" && category == $section && (
-  subGhana == $subsection || 
-  subPolitics == $subsection || 
-  subSports == $subsection || 
-  subStem == $subsection || 
-  subEntertainment == $subsection || 
-  subWorld == $subsection || 
-  subOpinion == $subsection || 
-  subBusiness == $subsection
-)] | order(publishedAt desc) {
+// THE FIX: Directly matches the exact dropdown value you select in Sanity Studio
+const query = `*[_type == "article" && category == $section] | order(publishedAt desc) {
   _id,
   title,
   summary,
   "slug": slug.current,
   publishedAt,
   "categoryName": category,
-  "subsectionName": coalesce(subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness),
   mainImage
 }`;
 
-export default async function SubsectionPage({ params }: { params: Promise<{ section: string; subsection: string }> }) {
+export default async function CategoryPage({ params }: { params: Promise<{ section: string }> }) {
   const resolvedParams = await params;
-  const safeSection = resolvedParams.section.toLowerCase();
-  const safeSubsection = resolvedParams.subsection.toLowerCase(); 
-
+  const safeSection = resolvedParams.section.toLowerCase(); 
+  
   const articles = await client.fetch(
     query, 
-    { section: safeSection, subsection: safeSubsection }, 
+    { section: safeSection }, 
     { next: { tags: ['articles', `category-${safeSection}`] } }
   );
-
-  const formattedTitle = safeSubsection.replace(/-/g, ' ').toUpperCase();
+  
+  const categoryTitle = safeSection.replace('-', ' ').toUpperCase();
 
   return (
     <div className="bg-white min-h-screen text-[#121826]">
       <div className="max-w-6xl mx-auto px-6 py-12">
         
         <header className="mb-12 border-b-4 border-[#C8102E] pb-4 inline-block">
-          <div className="flex items-center space-x-2 mb-2">
-            <span className="w-2 h-2 bg-[#C8102E] rounded-full"></span>
-            <span className="text-[#C8102E] font-black uppercase tracking-widest text-sm font-mono">
-              {safeSection.toUpperCase()}
-            </span>
-          </div>
           <h1 className="text-4xl md:text-5xl font-black text-black uppercase tracking-tighter" style={{ fontFamily: 'Oswald, sans-serif' }}>
-            {formattedTitle}
+            {categoryTitle}
           </h1>
         </header>
 
         {articles.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 rounded-xl border border-gray-200">
-            <p className="text-gray-500 font-medium text-lg">Stories are currently being updated for this subsection.</p>
+            <p className="text-gray-500 font-medium text-lg">Stories are currently being updated for this section.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -75,8 +58,7 @@ export default async function SubsectionPage({ params }: { params: Promise<{ sec
                 {article.mainImage && (
                   <div className="relative w-full aspect-[4/3] rounded-sm overflow-hidden bg-gray-100 border border-gray-200">
                     <div className="absolute top-4 left-4 z-10 bg-[#C8102E] text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-sm shadow-sm">
-                      {/* Formats the badge to strip the prefix (e.g. "Sports: Football" just becomes "FOOTBALL") */}
-                      {(article.subsectionName || formattedTitle).split(': ').pop()?.toUpperCase()}
+                      {article.categoryName || categoryTitle}
                     </div>
                     <Image 
                       src={urlFor(article.mainImage).url()} 
