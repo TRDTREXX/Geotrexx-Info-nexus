@@ -5,13 +5,13 @@ import Image from 'next/image';
 
 export const revalidate = 60;
 
-// Reverted to your exact original query to ensure categories match perfectly
+// THE FIX: Using coalesce and dereferencing (->) to resolve the empty category bug
 const query = `*[_type == "article"] | order(publishedAt desc) {
   _id,
   title,
   "slug": slug.current,
   publishedAt,
-  category,
+  "category": coalesce(category->slug.current, category),
   mainImage
 }[0...100]`;
 
@@ -47,7 +47,7 @@ export default async function HomePage() {
 
   if (!articles || articles.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-32 text-center bg-[#faf9f6]">
+      <div className="max-w-7xl mx-auto px-6 py-32 text-center bg-white">
         <h1 className="text-3xl font-black text-gray-900 uppercase">No Articles Published</h1>
       </div>
     );
@@ -56,20 +56,24 @@ export default async function HomePage() {
   const featuredArticle = articles[0];
   const trendingArticles = articles.slice(1, 5);
   
-  // Restored your exact 8 original categories
-  const ghanaArticles = articles.filter((a: any) => a.category === 'ghana').slice(0, 4);
-  const politicsArticles = articles.filter((a: any) => a.category === 'politics').slice(0, 4);
-  const businessArticles = articles.filter((a: any) => a.category === 'business').slice(0, 4);
-  const sportsArticles = articles.filter((a: any) => a.category === 'sports').slice(0, 4);
-  const worldArticles = articles.filter((a: any) => a.category === 'world').slice(0, 4);
-  const stemArticles = articles.filter((a: any) => a.category === 'stem').slice(0, 4);
-  const entertainmentArticles = articles.filter((a: any) => a.category === 'entertainment').slice(0, 4);
-  const opinionArticles = articles.filter((a: any) => a.category === 'opinion').slice(0, 4);
+  // Safely matching categories (ignoring case) to populate the grid
+  const getCategoryArticles = (catName: string) => 
+    articles.filter((a: any) => (a.category || '').toLowerCase() === catName).slice(0, 4);
+
+  const ghanaArticles = getCategoryArticles('ghana');
+  const politicsArticles = getCategoryArticles('politics');
+  const businessArticles = getCategoryArticles('business');
+  const sportsArticles = getCategoryArticles('sports');
+  const worldArticles = getCategoryArticles('world');
+  const stemArticles = getCategoryArticles('stem');
+  const entertainmentArticles = getCategoryArticles('entertainment');
+  const opinionArticles = getCategoryArticles('opinion');
 
   const moreLatestArticles = articles.slice(5, 21);
 
   return (
-    <div className="bg-[#faf9f6] text-[#121826] min-h-screen">
+    // STRICT GUIDANCE: Pure bright white background (bg-white) applied here
+    <div className="bg-white text-[#121826] min-h-screen">
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
         
         {/* TOP GRID: HERO & TRENDING */}
@@ -139,7 +143,7 @@ export default async function HomePage() {
             <div className="flex items-center gap-3 mb-10">
               <div className="w-3 h-3 bg-gray-900"></div>
               <h3 className="text-2xl md:text-3xl font-black text-gray-900 uppercase tracking-tighter" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                More Latest Stories
+                More Latest Dispatches
               </h3>
             </div>
             
