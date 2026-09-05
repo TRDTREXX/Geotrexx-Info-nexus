@@ -14,16 +14,16 @@ export async function generateMetadata({ params }: { params: Promise<{ section: 
   };
 }
 
-// Queries Sanity for the specific subsection dropdowns
-const query = `*[_type == "article" && category == $section && (
-  subGhana == $subsection || 
-  subPolitics == $subsection || 
-  subSports == $subsection || 
-  subStem == $subsection || 
-  subEntertainment == $subsection || 
-  subWorld == $subsection || 
-  subOpinion == $subsection || 
-  subBusiness == $subsection
+// THE FIX: "match" makes the search case-insensitive, so it finds "Football" even if the URL says "football".
+const query = `*[_type == "article" && category match $section && (
+  subGhana match $searchSubsection || 
+  subPolitics match $searchSubsection || 
+  subSports match $searchSubsection || 
+  subStem match $searchSubsection || 
+  subEntertainment match $searchSubsection || 
+  subWorld match $searchSubsection || 
+  subOpinion match $searchSubsection || 
+  subBusiness match $searchSubsection
 )] | order(publishedAt desc) {
   _id,
   title,
@@ -39,14 +39,17 @@ export default async function SubsectionPage({ params }: { params: Promise<{ sec
   const resolvedParams = await params;
   const safeSection = resolvedParams.section.toLowerCase();
   const safeSubsection = resolvedParams.subsection.toLowerCase(); 
+  
+  // THE FIX: Converts hyphens to spaces so URLs like /ghana-politics match "Ghana Politics" in Sanity
+  const searchSubsection = safeSubsection.replace(/-/g, ' ');
 
   const articles = await client.fetch(
     query, 
-    { section: safeSection, subsection: safeSubsection }, 
+    { section: safeSection, searchSubsection: searchSubsection }, 
     { next: { tags: ['articles', `category-${safeSection}`] } }
   );
 
-  const formattedTitle = safeSubsection.replace(/-/g, ' ').toUpperCase();
+  const formattedTitle = searchSubsection.toUpperCase();
 
   return (
     <div className="bg-white min-h-screen text-[#121826]">
@@ -75,7 +78,6 @@ export default async function SubsectionPage({ params }: { params: Promise<{ sec
                 {article.mainImage && (
                   <div className="relative w-full aspect-[4/3] rounded-sm overflow-hidden bg-gray-100 border border-gray-200">
                     <div className="absolute top-4 left-4 z-10 bg-[#C8102E] text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-sm shadow-sm">
-                      {/* Formats the badge to strip the prefix (e.g. "Sports: Football" just becomes "FOOTBALL") */}
                       {(article.subsectionName || formattedTitle).split(': ').pop()?.toUpperCase()}
                     </div>
                     <Image 
