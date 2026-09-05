@@ -1,12 +1,12 @@
 import './globals.css';
 import SiteNavigation from '../components/SiteNavigation';
 import Footer from '../components/Footer';
-import { ThemeProvider } from 'next-themes';
+import { ThemeProvider } from '../components/ThemeProvider';
 import { createClient } from '@sanity/client';
 
 export const metadata = {
   title: 'GEOTREXX | Unbiased, Accurate and Authoritative',
-  description: 'GEOTREXX Media Group - Unbiased, accurate and authoritative news, politics, business, and sports.',
+  description: 'GEOTREXX Media Group - Premium news, politics, business, and sports.',
 };
 
 const client = createClient({
@@ -35,7 +35,10 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning> 
-      {/* CRITICAL FIX: text-gray-900 ensures text is dark in light mode */}
+      <head>
+        {/* YOUR EXACT ADSENSE PUBLISHER SCRIPT */}
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6716191654210557" crossOrigin="anonymous"></script>
+      </head>
       <body className="bg-white dark:bg-[#0a0b10] text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col font-sans">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <SiteNavigation tickerText={liveHeadlines} />
