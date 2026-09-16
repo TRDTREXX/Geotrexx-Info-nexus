@@ -8,14 +8,14 @@ export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: Promise<{ section: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
-  const categoryName = resolvedParams.section.replace('-', ' ').toUpperCase();
+  const categoryName = resolvedParams.section.replace(/-/g, ' ').toUpperCase();
   return {
     title: `${categoryName} News | GEOTREXX`,
   };
 }
 
-// THE FIX: Directly matches the exact dropdown value you select in Sanity Studio
-const query = `*[_type == "article" && category == $section] | order(publishedAt desc) {
+// THE FIX: Changed '==' to 'match' so it is completely case-insensitive
+const query = `*[_type == "article" && category match $section] | order(publishedAt desc) {
   _id,
   title,
   summary,
@@ -27,7 +27,9 @@ const query = `*[_type == "article" && category == $section] | order(publishedAt
 
 export default async function CategoryPage({ params }: { params: Promise<{ section: string }> }) {
   const resolvedParams = await params;
-  const safeSection = resolvedParams.section.toLowerCase(); 
+  
+  // Clean the URL parameter and handle hyphens
+  const safeSection = resolvedParams.section.toLowerCase().replace(/-/g, ' '); 
   
   const articles = await client.fetch(
     query, 
@@ -35,7 +37,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ secti
     { next: { tags: ['articles', `category-${safeSection}`] } }
   );
   
-  const categoryTitle = safeSection.replace('-', ' ').toUpperCase();
+  const categoryTitle = safeSection.toUpperCase();
 
   return (
     <div className="bg-white min-h-screen text-[#121826]">
