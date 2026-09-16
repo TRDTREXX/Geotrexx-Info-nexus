@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ section: 
   };
 }
 
-// THE FIX: "match" makes the search case-insensitive, so it finds "Football" even if the URL says "football".
+// THE FIX: Added && defined(body[0]) to filter out empty/thin articles
 const query = `*[_type == "article" && category match $section && (
   subGhana match $searchSubsection || 
   subPolitics match $searchSubsection || 
@@ -24,7 +24,7 @@ const query = `*[_type == "article" && category match $section && (
   subWorld match $searchSubsection || 
   subOpinion match $searchSubsection || 
   subBusiness match $searchSubsection
-)] | order(publishedAt desc) {
+) && defined(body[0])] | order(publishedAt desc) {
   _id,
   title,
   summary,
@@ -37,11 +37,8 @@ const query = `*[_type == "article" && category match $section && (
 
 export default async function SubsectionPage({ params }: { params: Promise<{ section: string; subsection: string }> }) {
   const resolvedParams = await params;
-  const safeSection = resolvedParams.section.toLowerCase();
-  const safeSubsection = resolvedParams.subsection.toLowerCase(); 
-  
-  // THE FIX: Converts hyphens to spaces so URLs like /ghana-politics match "Ghana Politics" in Sanity
-  const searchSubsection = safeSubsection.replace(/-/g, ' ');
+  const safeSection = resolvedParams.section.toLowerCase().replace(/-/g, ' ');
+  const searchSubsection = resolvedParams.subsection.toLowerCase().replace(/-/g, ' ');
 
   const articles = await client.fetch(
     query, 
@@ -52,7 +49,7 @@ export default async function SubsectionPage({ params }: { params: Promise<{ sec
   const formattedTitle = searchSubsection.toUpperCase();
 
   return (
-    <div className="bg-white min-h-screen text-[#121826]">
+    <div className="bg-white min-h-screen text-[#121826]" style={{ backgroundColor: '#ffffff' }}>
       <div className="max-w-6xl mx-auto px-6 py-12">
         
         <header className="mb-12 border-b-4 border-[#C8102E] pb-4 inline-block">
@@ -68,7 +65,7 @@ export default async function SubsectionPage({ params }: { params: Promise<{ sec
         </header>
 
         {articles.length === 0 ? (
-          <div className="text-center py-20 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="text-center py-20 bg-gray-50 rounded-xl border border-gray-200" style={{ backgroundColor: '#ffffff' }}>
             <p className="text-gray-500 font-medium text-lg">Stories are currently being updated for this subsection.</p>
           </div>
         ) : (

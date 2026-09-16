@@ -14,8 +14,8 @@ export async function generateMetadata({ params }: { params: Promise<{ section: 
   };
 }
 
-// THE FIX: Changed '==' to 'match' so it is completely case-insensitive
-const query = `*[_type == "article" && category match $section] | order(publishedAt desc) {
+// THE FIX: Added && defined(body[0]) to filter out empty/thin articles
+const query = `*[_type == "article" && category match $section && defined(body[0])] | order(publishedAt desc) {
   _id,
   title,
   summary,
@@ -27,8 +27,6 @@ const query = `*[_type == "article" && category match $section] | order(publishe
 
 export default async function CategoryPage({ params }: { params: Promise<{ section: string }> }) {
   const resolvedParams = await params;
-  
-  // Clean the URL parameter and handle hyphens
   const safeSection = resolvedParams.section.toLowerCase().replace(/-/g, ' '); 
   
   const articles = await client.fetch(
@@ -40,7 +38,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ secti
   const categoryTitle = safeSection.toUpperCase();
 
   return (
-    <div className="bg-white min-h-screen text-[#121826]">
+    <div className="bg-white min-h-screen text-[#121826]" style={{ backgroundColor: '#ffffff' }}>
       <div className="max-w-6xl mx-auto px-6 py-12">
         
         <header className="mb-12 border-b-4 border-[#C8102E] pb-4 inline-block">
@@ -50,7 +48,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ secti
         </header>
 
         {articles.length === 0 ? (
-          <div className="text-center py-20 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="text-center py-20 bg-gray-50 rounded-xl border border-gray-200" style={{ backgroundColor: '#ffffff' }}>
             <p className="text-gray-500 font-medium text-lg">Stories are currently being updated for this section.</p>
           </div>
         ) : (
