@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from 'next-sanity';
 
 // 1. Initialize Sanity Write Client
-// NOTE: useCdn MUST be false for mutations and uploads
 const writeClient = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'x0tpoga9',
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
+  projectId: 'x0tpoga9',
+  dataset: 'production',
   apiVersion: '2024-03-01',
   useCdn: false,
-  token: process.env.SANITY_API_WRITE_TOKEN, 
+  // Hardcoded to bypass Vercel cache completely
+  token: 'sk9kldaFOmZNWrhN7bQzYi1AZT7E5OpCEoPj2px5ggL6YEh52ehVvMKyiIo4BPl1hbj4t2xItWfHZGYdzJ9lU7dyxN8uNIpd94LfEAYOJlssN4qFuP5DFouqrJWOGuokD8nR4OuB7X1EhaxxKRz2u3mWqYUkuz0SJHjASD4qF8Wfjw68rEVT', 
 });
 
 // Configure route to allow max payload on Vercel
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     const authorId = formData.get('authorId') as string;
     const imageFile = formData.get('image') as File | null;
 
-    // 3. Security & Validation (Mapped to your Vercel settings)
+    // 3. Security & Validation
     const EDITORIAL_PASSCODE = process.env.WRITER_PORTAL_PASSCODE || 'geotrexx2026';
     if (passcode !== EDITORIAL_PASSCODE) {
       return NextResponse.json(
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     const portableTextBody = toPortableText(bodyText);
 
     const docPayload: any = {
-      _type: 'article', // Change to 'post' if your schema uses 'post' instead of 'article'
+      _type: 'article', 
       title: title.trim(),
       slug: {
         _type: 'slug',
