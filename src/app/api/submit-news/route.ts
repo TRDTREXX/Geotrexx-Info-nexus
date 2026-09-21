@@ -16,7 +16,6 @@ function slugify(text: string) {
 
 export async function POST(req: Request) {
   try {
-    // We parse FormData now instead of JSON to handle the incoming image file
     const formData = await req.formData();
     
     const passcode = formData.get('passcode') as string;
@@ -27,7 +26,8 @@ export async function POST(req: Request) {
     const authorId = formData.get('authorId') as string;
     const imageFile = formData.get('image') as File | null;
 
-    const validPasscode = process.env.WRITER_PORTAL_PASSCODE || 'geotrexx2026';
+    // Locked to your new admin passcode
+    const validPasscode = process.env.WRITER_PORTAL_PASSCODE || 'admin2026';
     if (!passcode || passcode !== validPasscode) {
       return NextResponse.json({ error: 'Invalid access passcode.' }, { status: 401 });
     }
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     }));
 
     const cleanSlug = `${slugify(title)}-${Date.now().toString().slice(-4)}`;
-    const documentId = crypto.randomUUID(); // No 'drafts.' prefix means it goes LIVE immediately
+    const documentId = crypto.randomUUID();
 
     // 3. Construct the Article and Link the Uploaded Image
     const doc = {
@@ -69,7 +69,7 @@ export async function POST(req: Request) {
         _type: 'image',
         asset: {
           _type: 'reference',
-          _ref: uploadedAsset._id // Link the image we just uploaded
+          _ref: uploadedAsset._id 
         }
       },
       author: {
