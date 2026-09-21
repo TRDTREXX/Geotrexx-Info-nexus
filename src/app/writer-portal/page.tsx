@@ -1,170 +1,145 @@
 'use client';
+import { useState, useEffect } from 'react';
+import { createClient } from 'next-sanity';
 
-import React, { useState, useEffect } from 'react';
-import { client } from '../../sanity/lib/client';
+const readClient = createClient({
+  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'x0tpoga9',
+  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
+  apiVersion: '2024-03-01',
+  useCdn: true,
+});
 
-const CATEGORIES = ['Ghana', 'Politics', 'Business', 'Sports', 'STEM', 'Entertainment', 'World', 'Opinion'];
-
-export default function WriterPortalPage() {
-  const [authors, setAuthors] = useState<{ _id: string, name: string }[]>([]);
-  const [form, setForm] = useState({ passcode: '', title: '', category: 'Ghana', summary: '', body: '', authorId: '' });
+export default function WriterPortal() {
+  const [authors, setAuthors] = useState<any[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [status, setStatus] = useState<{ type: 'idle' | 'loading' | 'success' | 'error', message: string }>({ type: 'idle', message: '' });
 
-  // Automatically fetch all current authors from Sanity when the page loads
   useEffect(() => {
     async function fetchAuthors() {
       try {
-        const authorData = await client.fetch('*[_type == "author"]{_id, name} | order(name asc)');
-        setAuthors(authorData);
-      } catch (err) {
-        console.error('Failed to fetch authors:', err);
+        const data = await readClient.fetch(`*[_type == "author"]{_id, name}`);
+        setAuthors(data);
+      } catch (error) {
+        console.error("Failed to fetch authors", error);
       }
     }
     fetchAuthors();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
+  // NEW: Image size validator to prevent Vercel crashes
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setImageFile(e.target.files[0]);
+      const file = e.target.files[0];
+      if (file.size > 4.2 * 1024 * 1024) {
+        setStatus({
+          type: 'error',
+          message: `Image is ${(file.size / (1024 * 1024)).toFixed(1)}MB. Vercel allows up to 4.2MB. Please compress or resize before submitting.`,
+        });
+        e.target.value = '';
+        setImageFile(null);
+        return;
+      }
+      setImageFile(file);
+      setStatus({ type: 'idle', message: '' });
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
-    setStatus(null);
+    setStatus({ type: 'loading', message: 'Publishing article to Sanity...' });
 
-    if (!form.authorId) {
-      setStatus({ type: 'error', message: 'You must select an Author Profile.' });
-      setLoading(false);
-      return;
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    if (imageFile) {
+      formData.set('image', imageFile);
     }
-
-    if (!imageFile) {
-      setStatus({ type: 'error', message: 'You must upload a Main Image to publish directly.' });
-      setLoading(false);
-      return;
-    }
-
-    // We must use FormData instead of JSON so we can securely transmit the image file
-    const formData = new FormData();
-    formData.append('passcode', form.passcode);
-    formData.append('title', form.title);
-    formData.append('category', form.category);
-    formData.append('summary', form.summary);
-    formData.append('body', form.body);
-    formData.append('authorId', form.authorId);
-    formData.append('image', imageFile);
 
     try {
-      const res = await fetch('/api/submit-news', {
+      const response = await fetch('/api/submit-news', {
         method: 'POST',
-        body: formData, // Next.js automatically sets the correct headers for FormData
+        body: formData, // Sending as raw FormData so the backend can parse the Buffer
       });
-      const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error || 'Submission failed');
+      const result = await response.json();
 
-      setStatus({ type: 'success', message: 'SUCCESS: Story and image published live to GEOTREXX!' });
-      
-      // Clear out the form for the next article
-      setForm((prev) => ({ ...prev, title: '', summary: '', body: '' }));
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit article.');
+      }
+
+      setStatus({ type: 'success', message: result.message });
+      form.reset();
       setImageFile(null);
-      const fileInput = document.getElementById('imageUpload') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-    } catch (err: any) {
-      setStatus({ type: 'error', message: err.message || 'Something went wrong.' });
-    } finally {
-      setLoading(false);
+    } catch (error: any) {
+      setStatus({ type: 'error', message: error.message });
     }
   };
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#ffffff', color: '#121826' }}>
-      <div className="max-w-3xl mx-auto border border-gray-200 rounded-sm shadow-sm p-6 sm:p-10">
-        <div className="border-b-2 border-gray-900 pb-4 mb-8">
-          <span className="text-xs font-black text-[#C8102E] uppercase tracking-widest font-mono">GEOTREXX Editorial Desk</span>
-          <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-black mt-1" style={{ fontFamily: 'Oswald, sans-serif' }}>
-            Staff Article Submission
-          </h1>
-          <p className="text-sm text-gray-500 mt-1 font-serif">
-            Articles submitted here bypass the draft queue and auto-publish directly to the live site.
-          </p>
+    <main className="max-w-4xl mx-auto p-6 mt-10">
+      <h1 className="text-3xl font-bold mb-6 uppercase tracking-wide">Writer Portal</h1>
+      <p className="mb-8 text-gray-600">Articles submitted here bypass the draft queue and auto-publish directly to the live site.</p>
+      
+      {status.message && (
+        <div className={`p-4 mb-6 rounded ${status.type === 'error' ? 'bg-red-100 text-red-700' : status.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+          {status.message}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 border border-gray-200 rounded shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Editorial Passcode *</label>
+            <input type="password" name="passcode" required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700" />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Author Profile *</label>
+            <select name="authorId" required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700 font-bold text-red-800">
+              <option value="">SELECT AUTHOR...</option>
+              {authors.map((author) => (
+                <option key={author._id} value={author._id}>{author.name.toUpperCase()}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {status && (
-          <div className={`p-4 rounded-sm mb-6 text-sm font-medium ${status.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-[#C8102E]'}`}>
-            {status.message}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-200 pb-6">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1 font-mono">Editorial Passcode *</label>
-              <input type="password" name="passcode" required value={form.passcode} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1 font-mono">Author Profile *</label>
-              <select name="authorId" required value={form.authorId} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-sm bg-white font-bold text-[#C8102E]">
-                <option value="">Select Writer...</option>
-                {authors.map((author) => (
-                  <option key={author._id} value={author._id}>{author.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1 font-mono">Headline *</label>
-              <input type="text" name="title" required value={form.title} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-sm font-medium" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1 font-mono">Category *</label>
-              <select name="category" value={form.category} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-sm bg-white">
-                {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="p-4 bg-gray-50 border border-gray-200 rounded-sm">
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-2 font-mono">
-              Main Article Image * <span className="text-gray-400 font-normal">(Required for Auto-Publish)</span>
-            </label>
-            <input 
-              id="imageUpload"
-              type="file" 
-              accept="image/*" 
-              required 
-              onChange={handleImageChange} 
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-bold file:uppercase file:bg-[#C8102E] file:text-white hover:file:bg-black transition-colors"
-            />
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1 font-mono">Summary *</label>
-            <textarea name="summary" required rows={2} value={form.summary} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-sm" />
+            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Headline *</label>
+            <input type="text" name="title" required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700" />
           </div>
-
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1 font-mono">Body Copy *</label>
-            <textarea name="body" required rows={12} value={form.body} onChange={handleChange} placeholder="Separate paragraphs with an empty line..." className="w-full px-4 py-2 border border-gray-300 rounded-sm font-serif" />
+            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Category *</label>
+            <select name="category" required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700">
+              <option value="Ghana">Ghana</option>
+              <option value="World">World</option>
+              <option value="Politics">Politics</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Sports">Sports</option>
+            </select>
           </div>
+        </div>
 
-          <div className="border-t border-gray-200 pt-4 flex justify-end">
-            <button type="submit" disabled={loading} className="px-8 py-3 bg-[#C8102E] text-white font-bold uppercase text-xs tracking-widest hover:bg-black transition-colors disabled:opacity-50" style={{ fontFamily: 'Oswald, sans-serif' }}>
-              {loading ? 'Publishing Live...' : 'Publish Live to GEOTREXX'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="bg-gray-50 p-6 rounded border border-gray-200">
+          <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Main Article Image * <span className="font-normal text-gray-500 normal-case tracking-normal">(Required for Auto-Publish)</span></label>
+          <input type="file" accept="image/*" onChange={handleImageChange} required className="w-full" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Summary *</label>
+          <textarea name="summary" rows={2} required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700"></textarea>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Full Article Body *</label>
+          <textarea name="body" rows={10} required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700" placeholder="Separate paragraphs by pressing Enter twice..."></textarea>
+        </div>
+
+        <button type="submit" disabled={status.type === 'loading'} className="w-full bg-red-700 text-white font-bold tracking-widest uppercase p-4 rounded hover:bg-red-800 disabled:opacity-50 transition-colors">
+          {status.type === 'loading' ? 'Publishing...' : 'Publish Article'}
+        </button>
+      </form>
+    </main>
   );
 }
