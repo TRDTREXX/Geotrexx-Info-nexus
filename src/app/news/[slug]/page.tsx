@@ -6,21 +6,21 @@ import Image from 'next/image';
 
 export const revalidate = 60;
 
-// THE FIX: Added "authorImage": author->image to fetch the real picture from Sanity
+// Resolved Section & Sub-Section references alongside legacy fallback fields
 const query = `*[_type == "article" && slug.current == $slug][0]{
   title,
   summary,
   publishedAt,
   _updatedAt,
-  "categoryName": category,
-  "subsectionName": coalesce(subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness),
+  "categoryName": coalesce(mainSection->title, category),
+  "subsectionName": coalesce(subSection->title, subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness),
   "authorName": author->name,
   "authorImage": author->image,
   mainImage,
   body
 }`;
 
-// --- THE METADATA FIX: Optimizing for WhatsApp/Twitter scrapers ---
+// --- METADATA & OPEN GRAPH SCRAPERS ---
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
   const article = await client.fetch(query, { slug: resolvedParams.slug });
@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-// --- INLINE IMAGE FIX ---
+// --- INLINE IMAGE COMPONENT ---
 const ptComponents = {
   types: {
     image: ({ value }: any) => {
@@ -122,7 +122,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     );
   }
 
-  // Generate AdSense & Google News Compliant JSON-LD (Strictly invisible to readers)
+  // Schema.org NewsArticle JSON-LD structured data for Google Search & Top Stories
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -157,7 +157,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   };
 
   return (
-    // THE FIX: Forced absolute #ffffff inline style to override any global off-white background
     <article className="min-h-screen text-[#121826]" style={{ backgroundColor: '#ffffff' }}>
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Invisible Structured Data for Google Indexing */}
@@ -183,7 +182,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             {article.summary}
           </p>
 
-          {/* THE FIX: Author block now strictly pulls the image from Sanity */}
           <div className="flex items-center justify-between border-t border-gray-300 pt-4">
             <div className="flex items-center gap-3 text-sm font-bold text-gray-900 uppercase tracking-wide font-sans">
               {article.authorImage ? (
