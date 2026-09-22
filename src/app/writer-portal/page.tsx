@@ -11,19 +11,30 @@ const readClient = createClient({
 
 export default function WriterPortal() {
   const [authors, setAuthors] = useState<any[]>([]);
+  const [mainSections, setMainSections] = useState<any[]>([]);
+  const [subSections, setSubSections] = useState<any[]>([]);
+  
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [status, setStatus] = useState<{ type: 'idle' | 'loading' | 'success' | 'error', message: string }>({ type: 'idle', message: '' });
 
   useEffect(() => {
-    async function fetchAuthors() {
+    async function fetchSanityData() {
       try {
-        const data = await readClient.fetch(`*[_type == "author"]{_id, name}`);
-        setAuthors(data);
+        const [authorsData, mainData, subData] = await Promise.all([
+          readClient.fetch(`*[_type == "author"]{_id, name}`),
+          // Change "mainSection" below if your Sanity schema uses a different name for this document type
+          readClient.fetch(`*[_type == "mainSection"]{_id, title}`),
+          // Change "subSection" below if your Sanity schema uses a different name for this document type
+          readClient.fetch(`*[_type == "subSection"]{_id, title}`)
+        ]);
+        setAuthors(authorsData || []);
+        setMainSections(mainData || []);
+        setSubSections(subData || []);
       } catch (error) {
-        console.error("Failed to fetch authors", error);
+        console.error("Failed to fetch Sanity dropdown data", error);
       }
     }
-    fetchAuthors();
+    fetchSanityData();
   }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,6 +97,8 @@ export default function WriterPortal() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 border border-gray-200 rounded shadow-sm">
+        
+        {/* PASSCODE & AUTHOR */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Editorial Passcode *</label>
@@ -97,45 +110,47 @@ export default function WriterPortal() {
             <select name="authorId" required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700 font-bold text-red-800">
               <option value="">SELECT AUTHOR...</option>
               {authors.map((author) => (
-                <option key={author._id} value={author._id}>{author.name.toUpperCase()}</option>
+                <option key={author._id} value={author._id}>{author.name?.toUpperCase()}</option>
               ))}
             </select>
           </div>
         </div>
 
+        {/* HEADLINE */}
+        <div>
+          <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Headline *</label>
+          <input type="text" name="title" required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700" />
+        </div>
+
+        {/* MAIN SECTION & SUB-SECTION */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Headline *</label>
-            <input type="text" name="title" required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700" />
+            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Main Section *</label>
+            <select name="mainSectionId" required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700">
+              <option value="">SELECT MAIN SECTION...</option>
+              {mainSections.map((sec) => (
+                <option key={sec._id} value={sec._id}>{sec.title}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Category *</label>
-            <select name="category" required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700">
-              <option value="Ghana">Ghana</option>
-              <option value="World">World</option>
-              <option value="Politics">Politics</option>
-              <option value="Entertainment">Entertainment</option>
-              <option value="Sports">Sports</option>
+            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Sub-Section</label>
+            <select name="subSectionId" className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700">
+              <option value="">SELECT SUB-SECTION...</option>
+              {subSections.map((sub) => (
+                <option key={sub._id} value={sub._id}>{sub.title}</option>
+              ))}
             </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Section</label>
-            <input type="text" name="section" placeholder="e.g. Local News" className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700" />
-          </div>
-          <div>
-            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Sub-Section</label>
-            <input type="text" name="subSection" placeholder="e.g. Accra Updates" className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700" />
-          </div>
-        </div>
-
+        {/* IMAGE UPLOAD */}
         <div className="bg-gray-50 p-6 rounded border border-gray-200">
           <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Main Article Image * <span className="font-normal text-gray-500 normal-case tracking-normal">(Required for Auto-Publish)</span></label>
           <input type="file" accept="image/*" onChange={handleImageChange} required className="w-full" />
         </div>
 
+        {/* TEXT CONTENT */}
         <div>
           <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Summary *</label>
           <textarea name="summary" rows={2} required className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700"></textarea>
