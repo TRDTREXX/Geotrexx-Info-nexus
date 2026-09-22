@@ -59,6 +59,10 @@ export async function POST(req: NextRequest) {
     const bodyText = formData.get('body') as string;
     const authorId = formData.get('authorId') as string;
     const imageFile = formData.get('image') as File | null;
+    
+    // Extract Section and Sub-Section
+    const section = formData.get('section') as string;
+    const subSection = formData.get('subSection') as string;
 
     // 3. Security & Validation
     const EDITORIAL_PASSCODE = process.env.WRITER_PORTAL_PASSCODE || 'geotrexx2026';
@@ -130,6 +134,11 @@ export async function POST(req: NextRequest) {
       },
       publishedAt: new Date().toISOString(),
       summary: summary ? summary.trim() : '',
+      
+      // Inject Section and Sub-Section
+      section: section ? section.trim() : '',
+      subSection: subSection ? subSection.trim() : '',
+      
       author: {
         _type: 'reference',
         _ref: authorId,

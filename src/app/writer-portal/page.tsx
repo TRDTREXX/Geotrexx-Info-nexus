@@ -26,7 +26,6 @@ export default function WriterPortal() {
     fetchAuthors();
   }, []);
 
-  // NEW: Image size validator to prevent Vercel crashes
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
@@ -58,7 +57,7 @@ export default function WriterPortal() {
     try {
       const response = await fetch('/api/submit-news', {
         method: 'POST',
-        body: formData, // Sending as raw FormData so the backend can parse the Buffer
+        body: formData, 
       });
 
       const result = await response.json();
@@ -118,6 +117,17 @@ export default function WriterPortal() {
               <option value="Entertainment">Entertainment</option>
               <option value="Sports">Sports</option>
             </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Section</label>
+            <input type="text" name="section" placeholder="e.g. Local News" className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold tracking-widest text-gray-700 mb-2 uppercase">Sub-Section</label>
+            <input type="text" name="subSection" placeholder="e.g. Accra Updates" className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-red-700" />
           </div>
         </div>
 
