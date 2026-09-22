@@ -3,6 +3,7 @@ import SiteNavigation from '../components/SiteNavigation';
 import Footer from '../components/Footer';
 import { ThemeProvider } from '../components/ThemeProvider';
 import { createClient } from '@sanity/client';
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 export const metadata = {
   title: 'GEOTREXX | Unbiased, Accurate and Authoritative',
@@ -47,6 +48,9 @@ export default async function RootLayout({
           </div>
           <Footer />
         </ThemeProvider>
+        
+        {/* GEOTREXX GOOGLE ANALYTICS TRACKING */}
+        <GoogleAnalytics gaId="G-DR60BNWQE5" />
       </body>
     </html>
   );
