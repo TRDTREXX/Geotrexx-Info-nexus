@@ -12,14 +12,13 @@ const query = `*[_type == "article" && slug.current == $slug][0]{
   summary,
   publishedAt,
   _updatedAt,
-  "categoryName": coalesce(mainSection->title, category),
-  "subsectionName": coalesce(subSection->title, subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness),
+  "categoryName": category,
+  "subsectionName": coalesce(subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness),
   "authorName": author->name,
   "authorImage": author->image,
   mainImage,
   body
 }`;
-
 // --- METADATA & OPEN GRAPH SCRAPERS ---
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params;

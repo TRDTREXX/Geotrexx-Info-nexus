@@ -1,30 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from 'next-sanity';
 
-// 1. Initialize Sanity Write Client
 const writeClient = createClient({
   projectId: 'x0tpoga9',
   dataset: 'production',
   apiVersion: '2024-03-01',
   useCdn: false,
-  // Hardcoded to bypass Vercel cache completely
-  token: 'sk9kldaFOmZNWrhN7bQzYi1AZT7E5OpCEoPj2px5ggL6YEh52ehVvMKyiIo4BPl1hbj4t2xItWfHZGYdzJ9lU7dyxN8uNIpd94LfEAYOJlssN4qFuP5DFouqrJWOGuokD8nR4OuB7X1EhaxxKRz2u3mWqYUkuz0SJHjASD4qF8Wfjw68rEVT', 
+  token: 'sk9kldaFOmZNWrhN7bQzYi1AZT7E5OpCEoPj2px5ggL6YEh52ehVvMKyiIo4BPl1hbj4t2xItWfHZGYdzJ9lU7dyxN8uNIpd94LfEAYOJlssN4qFuP5DFouqrJWOGuokD8nR4OuB7X1EhaxxKRz2u3mWqYUkuz0SJHjASD4qF8Wfjw68rEVT',
 });
 
 export const dynamic = 'force-dynamic';
 
 function slugify(text: string): string {
-  return text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
 }
 
 function toPortableText(text: string) {
-  return text.split(/\n\s*\n/).filter((para) => para.trim().length > 0).map((para, index) => ({
-    _key: `block_${Date.now()}_${index}`,
-    _type: 'block',
-    style: 'normal',
-    markDefs: [],
-    children: [{ _key: `span_${Date.now()}_${index}`, _type: 'span', marks: [], text: para.trim() }],
-  }));
+  return text
+    .split(/\n\s*\n/)
+    .filter((para) => para.trim().length > 0)
+    .map((para, index) => ({
+      _key: `block_${Date.now()}_${index}`,
+      _type: 'block',
+      style: 'normal',
+      markDefs: [],
+      children: [{ _key: `span_${Date.now()}_${index}`, _type: 'span', marks: [], text: para.trim() }],
+    }));
 }
 
 export async function POST(req: NextRequest) {
@@ -37,18 +46,21 @@ export async function POST(req: NextRequest) {
     const bodyText = formData.get('body') as string;
     const authorId = formData.get('authorId') as string;
     const imageFile = formData.get('image') as File | null;
-    
-    // Extract the new Section IDs
-    const mainSectionId = formData.get('mainSectionId') as string;
-    const subSectionId = formData.get('subSectionId') as string;
+
+    const mainSection = formData.get('mainSection') as string;
+    const subSection = formData.get('subSection') as string;
+    const subSectionField = formData.get('subSectionField') as string;
 
     const EDITORIAL_PASSCODE = process.env.WRITER_PORTAL_PASSCODE || 'geotrexx2026';
     if (passcode !== EDITORIAL_PASSCODE) {
       return NextResponse.json({ error: 'Unauthorized: Invalid editorial passcode.' }, { status: 401 });
     }
 
-    if (!title || !bodyText || !authorId || !mainSectionId) {
-      return NextResponse.json({ error: 'Missing required article fields (title, body, author, or main section).' }, { status: 400 });
+    if (!title || !bodyText || !authorId || !mainSection) {
+      return NextResponse.json(
+        { error: 'Missing required article fields (title, body, author, or main section).' },
+        { status: 400 }
+      );
     }
 
     if (!imageFile || !(imageFile instanceof File) || imageFile.size === 0) {
@@ -56,7 +68,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (imageFile.size > 4.5 * 1024 * 1024) {
-      return NextResponse.json({ error: `Image too large (${(imageFile.size / 1024 / 1024).toFixed(1)}MB). Vercel limit is 4.5MB.` }, { status: 413 });
+      return NextResponse.json(
+        { error: `Image too large (${(imageFile.size / 1024 / 1024).toFixed(1)}MB). Vercel limit is 4.5MB.` },
+        { status: 413 }
+      );
     }
 
     const arrayBuffer = await imageFile.arrayBuffer();
@@ -74,9 +89,9 @@ export async function POST(req: NextRequest) {
     const uniqueSlug = `${slugify(title)}-${Date.now().toString().slice(-4)}`;
     const portableTextBody = toPortableText(bodyText);
 
-    // Build the final document
+    // Document payload matching Sanity article schema fields
     const docPayload: any = {
-      _type: 'article', 
+      _type: 'article',
       title: title.trim(),
       slug: { _type: 'slug', current: uniqueSlug },
       publishedAt: new Date().toISOString(),
@@ -84,14 +99,13 @@ export async function POST(req: NextRequest) {
       author: { _type: 'reference', _ref: authorId },
       mainImage: { _type: 'image', asset: { _type: 'reference', _ref: imageAsset._id } },
       body: portableTextBody,
+      category: mainSection,
+      mainSection: mainSection,
     };
 
-    // Safely attach references if they exist
-    if (mainSectionId) {
-      docPayload.mainSection = { _type: 'reference', _ref: mainSectionId };
-    }
-    if (subSectionId) {
-      docPayload.subSection = { _type: 'reference', _ref: subSectionId };
+    // Set the specific subsection field (e.g. subGhana, subPolitics)
+    if (subSection && subSectionField) {
+      docPayload[subSectionField] = subSection;
     }
 
     const createdArticle = await writeClient.create(docPayload);
@@ -104,6 +118,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('API /api/submit-news Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error during publication', details: error.response?.body || error.stack }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || 'Internal Server Error during publication', details: error.response?.body || error.stack },
+      { status: 500 }
+    );
   }
 }
