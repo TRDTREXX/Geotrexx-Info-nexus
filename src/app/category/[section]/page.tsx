@@ -33,7 +33,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ secti
   const { section } = await params;
   const articles = await client.fetch(query, { section });
 
-  // 404 Safety Net: Kill page for Google bots if category has 0 published articles
+  // 404 Safety Net
   if (!articles || articles.length === 0) {
     notFound();
   }
@@ -54,7 +54,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ secti
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {articles.map((article: any) => (
-            <NewsCard key={article._id} article={article} />
+            <NewsCard key={article._id} post={article} />
           ))}
         </div>
       </div>
