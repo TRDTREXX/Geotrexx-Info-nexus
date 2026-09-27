@@ -1,89 +1,63 @@
 import { client } from '../../../sanity/lib/client';
-import { urlFor } from '../../../sanity/lib/image';
+import NewsCard from '../../../components/NewsCard';
+import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import Link from 'next/link';
-import Image from 'next/image';
 
 export const revalidate = 60;
 
-export async function generateMetadata({ params }: { params: Promise<{ section: string }> }): Promise<Metadata> {
-  const resolvedParams = await params;
-  const categoryName = resolvedParams.section.replace(/-/g, ' ').toUpperCase();
-  return {
-    title: `${categoryName} News | GEOTREXX`,
-  };
-}
-
-// THE FIX: Added && defined(body[0]) to filter out empty/thin articles
-const query = `*[_type == "article" && category match $section && defined(body[0])] | order(publishedAt desc) {
+const query = `*[_type == "article" && (lower(category) == lower($section) || lower(mainSection) == lower($section))] | order(publishedAt desc) {
   _id,
   title,
+  slug,
   summary,
-  "slug": slug.current,
   publishedAt,
   "categoryName": category,
+  "subsectionName": coalesce(subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness),
+  "authorName": author->name,
+  "authorImage": author->image,
   mainImage
 }`;
 
+export async function generateMetadata({ params }: { params: Promise<{ section: string }> }): Promise<Metadata> {
+  const { section } = await params;
+  const formattedTitle = section.charAt(0).toUpperCase() + section.slice(1);
+
+  return {
+    title: `${formattedTitle} News & Analysis | GEOTREXX`,
+    description: `Read verified ${formattedTitle} journalism and reports from GEOTREXX Media Group.`,
+    metadataBase: new URL('https://www.geotrexx.com'),
+  };
+}
+
 export default async function CategoryPage({ params }: { params: Promise<{ section: string }> }) {
-  const resolvedParams = await params;
-  const safeSection = resolvedParams.section.toLowerCase().replace(/-/g, ' '); 
-  
-  const articles = await client.fetch(
-    query, 
-    { section: safeSection }, 
-    { next: { tags: ['articles', `category-${safeSection}`] } }
-  );
-  
-  const categoryTitle = safeSection.toUpperCase();
+  const { section } = await params;
+  const articles = await client.fetch(query, { section });
+
+  // 404 Safety Net: Kill page for Google bots if category has 0 published articles
+  if (!articles || articles.length === 0) {
+    notFound();
+  }
+
+  const sectionTitle = section.toUpperCase();
 
   return (
-    <div className="bg-white min-h-screen text-[#121826]" style={{ backgroundColor: '#ffffff' }}>
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        
-        <header className="mb-12 border-b-4 border-[#C8102E] pb-4 inline-block">
-          <h1 className="text-4xl md:text-5xl font-black text-black uppercase tracking-tighter" style={{ fontFamily: 'Oswald, sans-serif' }}>
-            {categoryTitle}
+    <main className="min-h-screen bg-white text-[#121826] px-6 py-12">
+      <div className="max-w-6xl mx-auto">
+        <header className="mb-10 border-b-2 border-gray-900 pb-4">
+          <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#C8102E] uppercase tracking-widest mb-2">
+            <span>SECTION</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-black" style={{ fontFamily: 'Oswald, sans-serif' }}>
+            {sectionTitle}
           </h1>
         </header>
 
-        {articles.length === 0 ? (
-          <div className="text-center py-20 bg-gray-50 rounded-xl border border-gray-200" style={{ backgroundColor: '#ffffff' }}>
-            <p className="text-gray-500 font-medium text-lg">Stories are currently being updated for this section.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {articles.map((article: any) => (
-              <Link href={`/news/${article.slug}`} key={article._id} className="group flex flex-col gap-4">
-                {article.mainImage && (
-                  <div className="relative w-full aspect-[4/3] rounded-sm overflow-hidden bg-gray-100 border border-gray-200">
-                    <div className="absolute top-4 left-4 z-10 bg-[#C8102E] text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-sm shadow-sm">
-                      {article.categoryName || categoryTitle}
-                    </div>
-                    <Image 
-                      src={urlFor(article.mainImage).url()} 
-                      alt={article.title} 
-                      fill 
-                      className="object-cover transition-transform duration-300 group-hover:scale-105" 
-                    />
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs font-bold text-[#C8102E] uppercase tracking-widest mb-2 font-mono">
-                    {new Date(article.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                  <h2 className="text-xl font-bold text-black group-hover:text-[#0b2545] transition-colors line-clamp-2 leading-snug" style={{ fontFamily: 'Oswald, sans-serif' }}>
-                    {article.title}
-                  </h2>
-                  <p className="text-gray-600 text-sm mt-2 line-clamp-3" style={{ fontFamily: 'Newsreader, Georgia, serif' }}>
-                    {article.summary}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {articles.map((article: any) => (
+            <NewsCard key={article._id} article={article} />
+          ))}
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
