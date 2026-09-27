@@ -1,4 +1,5 @@
 import { client } from '../../../sanity/lib/client';
+import { urlFor } from '../../../sanity/lib/image';
 import NewsCard from '../../../components/NewsCard';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
@@ -8,7 +9,7 @@ export const revalidate = 60;
 const query = `*[_type == "article" && (lower(category) == lower($section) || lower(mainSection) == lower($section))] | order(publishedAt desc) {
   _id,
   title,
-  slug,
+  "slug": slug.current,
   summary,
   publishedAt,
   "categoryName": category,
@@ -33,7 +34,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ secti
   const { section } = await params;
   const articles = await client.fetch(query, { section });
 
-  // 404 Safety Net
+  // 404 Safety Net: Returns 404 if section has no articles
   if (!articles || articles.length === 0) {
     notFound();
   }
@@ -53,9 +54,27 @@ export default async function CategoryPage({ params }: { params: Promise<{ secti
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {articles.map((article: any) => (
-            <NewsCard key={article._id} post={article} />
-          ))}
+          {articles.map((article: any) => {
+            const imageUrl = article.mainImage
+              ? urlFor(article.mainImage).width(800).height(450).url()
+              : 'https://www.geotrexx.com/logo.png';
+
+            const formattedDate = article.publishedAt
+              ? new Date(article.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+              : '';
+
+            return (
+              <NewsCard
+                key={article._id}
+                title={article.title}
+                slug={article.slug || ''}
+                excerpt={article.summary || ''}
+                imageUrl={imageUrl}
+                category={article.categoryName ? article.categoryName.toUpperCase() : 'NEWS'}
+                date={formattedDate}
+              />
+            );
+          })}
         </div>
       </div>
     </main>
