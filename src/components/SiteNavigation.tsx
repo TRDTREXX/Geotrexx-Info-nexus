@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Moon, Sun } from 'lucide-react';
 
-export default function SiteNavigation() {
+// Added { tickerText } prop and its TypeScript definition to fix the build error
+export default function SiteNavigation({ tickerText }: { tickerText?: string }) {
   const pathname = usePathname();
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -32,7 +33,8 @@ export default function SiteNavigation() {
     { name: 'Sports', href: '/category/sports' },
   ];
 
-  const breakingNewsText = "OFFICIAL: CRISTIANO RONALDO CONFIRMS NEXT CAREER MOVE • GHANA SUPREME COURT DELIVERS LANDMARK RULING ON DECENTRALIZATION • NEW PARLIAMENTARY FISCAL BILL PROPOSED";
+  // Uses the live headlines from layout.tsx, or falls back to this default text
+  const breakingNewsText = tickerText || "OFFICIAL: CRISTIANO RONALDO CONFIRMS NEXT CAREER MOVE • GHANA SUPREME COURT DELIVERS LANDMARK RULING ON DECENTRALIZATION • NEW PARLIAMENTARY FISCAL BILL PROPOSED";
 
   return (
     <header className="w-full bg-white dark:bg-[#121826] shadow-sm sticky top-0 z-40 transition-colors duration-300">
@@ -56,7 +58,7 @@ export default function SiteNavigation() {
       {/* Tier 1: Red Breaking News Bar */}
       <div className="w-full bg-[#C8102E] text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest flex items-center overflow-hidden relative h-8 sm:h-9">
         
-        {/* Static Breaking Badge (Sits on top to hide scrolling text underneath) */}
+        {/* Static Breaking Badge */}
         <div className="flex items-center gap-2 whitespace-nowrap z-20 bg-[#C8102E] h-full px-4 border-r border-red-800 shadow-[5px_0_10px_rgba(200,16,46,1)]">
           <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
           <span>BREAKING</span>
@@ -65,7 +67,6 @@ export default function SiteNavigation() {
         {/* Seamless Scrolling Ticker Track */}
         <div className="flex-1 overflow-hidden h-full flex items-center relative z-10">
           <div className="animate-ticker cursor-pointer">
-            {/* We render the text twice side-by-side to create an infinite gapless loop */}
             <span className="px-8 whitespace-nowrap">{breakingNewsText}</span>
             <span className="px-8 whitespace-nowrap">{breakingNewsText}</span>
           </div>
