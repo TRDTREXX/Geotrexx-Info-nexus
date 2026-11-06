@@ -5,8 +5,8 @@ import Image from 'next/image';
 
 export const revalidate = 60;
 
-// THE FIX: Using coalesce and dereferencing (->) to resolve the empty category bug
-const query = `*[_type == "article"] | order(publishedAt desc) {
+// THE FIX: Enforcing strict fetching to only pull articles with a defined title and body
+const query = `*[_type == "article" && defined(title) && defined(body)] | order(publishedAt desc) {
   _id,
   title,
   "slug": slug.current,
@@ -43,7 +43,13 @@ const CategoryBlock = ({ title, articles }: { title: string, articles: any[] }) 
 };
 
 export default async function HomePage() {
-  const articles = await client.fetch(query, {}, { next: { tags: ['articles', 'homepage'] } });
+  const rawArticles = await client.fetch(query, {}, { next: { tags: ['articles', 'homepage'] } });
+
+  // ADSENSE LOCKDOWN: Strictly filter out any articles not in the 3 core pillars
+  const allowedCategories = ['ghana', 'politics', 'sports'];
+  const articles = rawArticles?.filter((a: any) => 
+    allowedCategories.includes((a.category || '').toLowerCase())
+  ) || [];
 
   if (!articles || articles.length === 0) {
     return (
@@ -62,17 +68,11 @@ export default async function HomePage() {
 
   const ghanaArticles = getCategoryArticles('ghana');
   const politicsArticles = getCategoryArticles('politics');
-  const businessArticles = getCategoryArticles('business');
   const sportsArticles = getCategoryArticles('sports');
-  const worldArticles = getCategoryArticles('world');
-  const stemArticles = getCategoryArticles('stem');
-  const entertainmentArticles = getCategoryArticles('entertainment');
-  const opinionArticles = getCategoryArticles('opinion');
 
   const moreLatestArticles = articles.slice(5, 21);
 
   return (
-    // STRICT GUIDANCE: Pure bright white background (bg-white) applied here
     <div className="bg-white text-[#121826] min-h-screen">
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
         
@@ -128,13 +128,8 @@ export default async function HomePage() {
         {/* ALL CATEGORY GRIDS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-16">
           <CategoryBlock title="GHANA" articles={ghanaArticles} />
-          <CategoryBlock title="WORLD" articles={worldArticles} />
           <CategoryBlock title="POLITICS" articles={politicsArticles} />
-          <CategoryBlock title="BUSINESS" articles={businessArticles} />
           <CategoryBlock title="SPORTS" articles={sportsArticles} />
-          <CategoryBlock title="STEM" articles={stemArticles} />
-          <CategoryBlock title="ENTERTAINMENT" articles={entertainmentArticles} />
-          <CategoryBlock title="OPINION" articles={opinionArticles} />
         </div>
 
         {/* MORE LATEST STORIES WALL */}
