@@ -1,33 +1,71 @@
-import { MetadataRoute } from 'next';
 import { client } from '@/sanity/lib/client';
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export const revalidate = 3600;
+
+export async function GET() {
   const baseUrl = 'https://www.geotrexx.com';
-  let articleEntries: MetadataRoute.Sitemap = [];
+  let articles = [];
 
   try {
-    const articles = await client.fetch(
-      `*[_type in ["article", "post"] && defined(slug.current)]{ "slug": slug.current, "updatedAt": coalesce(_updatedAt, publishedAt, _createdAt) }`
+    articles = await client.fetch(
+      `*[_type in ["article", "post"] && defined(slug.current)]{
+        "slug": slug.current,
+        "updatedAt": coalesce(_updatedAt, publishedAt, _createdAt)
+      }`
     );
-
-    articleEntries = (articles || []).map((art: any) => ({
-      url: `${baseUrl}/news/${art.slug}`,
-      lastModified: art.updatedAt ? new Date(art.updatedAt) : new Date(),
-      changeFrequency: 'daily' as const,
-      priority: 0.8,
-    }));
   } catch (err) {
     console.error('Sitemap Sanity fetch error:', err);
   }
 
-  return [
-    { url: baseUrl, lastModified: new Date(), changeFrequency: 'hourly', priority: 1 },
-    { url: `${baseUrl}/category/ghana`, lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
-    { url: `${baseUrl}/category/politics`, lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
-    { url: `${baseUrl}/category/world`, lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
-    { url: `${baseUrl}/category/business`, lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
-    { url: `${baseUrl}/category/sports`, lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
-    { url: `${baseUrl}/founders`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-    ...articleEntries,
+  const staticRoutes = [
+    '',
+    '/category/ghana',
+    '/category/politics',
+    '/category/world',
+    '/category/business',
+    '/category/sports',
+    '/founders',
+    '/standards',
+    '/privacy',
+    '/terms',
   ];
+
+  const now = new Date().toISOString();
+
+  const staticXml = staticRoutes
+    .map(
+      (route) => `
+  <url>
+    <loc>${baseUrl}${route}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>${route === '' ? 'hourly' : 'daily'}</changefreq>
+    <priority>${route === '' ? '1.0' : '0.8'}</priority>
+  </url>`
+    )
+    .join('');
+
+  const articleXml = (articles || [])
+    .map((art) => {
+      const lastMod = art.updatedAt
+        ? new Date(art.updatedAt).toISOString()
+        : now;
+      return `
+  <url>
+    <loc>${baseUrl}/news/${art.slug}</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+    })
+    .join('');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${staticXml}${articleXml}
+</urlset>`;
+
+  return new Response(xml, {
+    headers: {
+      'Content-Type': 'application/xml; charset=utf-8',
+    },
+  });
 }
