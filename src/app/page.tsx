@@ -230,9 +230,6 @@ export default async function Home() {
         <h2 className="font-black text-xs md:text-sm uppercase tracking-widest text-geotrexx-black">
           Top Stories
         </h2>
-        <span className="text-[11px] font-mono text-geotrexx-black uppercase font-bold">
-          Accra Bureau • Chronological Feed
-        </span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 mb-12">

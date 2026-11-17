@@ -5,6 +5,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ThemeToggle, LiveClock } from '@/components/ThemeToggle'
 import NavBar from '@/components/NavBar'
+import { client } from '@/sanity/lib/client'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 const publicSans = Public_Sans({ 
   subsets: ['latin'],
@@ -26,23 +30,52 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'GEOTREXX | News, Policy & Global Analysis',
-  description: 'The news belongs to the people. Straight facts across politics, business, tech, sports, history, and culture.',
+  title: 'GEOTREXX | Fearless and Factual',
+  description: 'Fearless and Factual. Straight reporting across Ghana, politics, world affairs, business, tech, and sports.',
 }
 
-const tickerItems = [
-  "ACCRA: Electoral Commission finalizes biometric verification protocols ahead of national polls",
-  "WEST AFRICA: ECOWAS finance ministers convene in Abuja over regional trade corridor tariffs",
-  "MARKETS: Bank of Ghana Monetary Policy Committee holds benchmark rate steady amid inflation dip",
-  "TECH: New fiber-optic submarine cable capacity goes live across Gulf of Guinea data centers",
-  "SPORTS: European Champions League quarterfinal draw sets up heavyweight tactical clashes",
-]
+const TICKER_QUERY = `*[_type in ["article", "post"] && defined(slug.current) && defined(mainImage.asset) && !(_id in path("drafts.**"))] {
+  _id,
+  title,
+  "slug": slug.current,
+  "category": upper(coalesce(category->title, category, section, "NEWS")),
+  publishedAt,
+  publishDate,
+  date,
+  _createdAt
+}`
 
-export default function RootLayout({
+function resolveTimestamp(post: any): number {
+  const candidates = [post.publishedAt, post.publishDate, post.date, post._createdAt]
+  for (const raw of candidates) {
+    if (raw && typeof raw === 'string' && raw.trim().length > 0) {
+      const ms = Date.parse(raw)
+      if (!Number.isNaN(ms)) return ms
+    }
+  }
+  return 0
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  let liveTickerArticles: { _id: string; title: string; slug: string; category: string }[] = []
+
+  try {
+    const rawTicker = await client.fetch(TICKER_QUERY, {}, { cache: 'no-store' })
+    liveTickerArticles = (rawTicker || [])
+      .map((item: any) => ({
+        ...item,
+        ts: resolveTimestamp(item),
+      }))
+      .sort((a: any, b: any) => b.ts - a.ts)
+      .slice(0, 8)
+  } catch (err) {
+    console.error('Ticker Sanity fetch error:', err)
+  }
+
   return (
     <html lang="en" className={`${publicSans.variable} ${merriweather.variable} ${jetbrainsMono.variable} bg-white`}>
       <body className="font-sans bg-white text-geotrexx-black antialiased min-h-screen flex flex-col">
@@ -60,7 +93,6 @@ export default function RootLayout({
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Top Bar Quick Social Logos */}
               <div className="hidden sm:flex items-center gap-3.5 border-r border-geotrexx-charcoal pr-4">
                 <a
                   href="https://whatsapp.com/channel/0029Vb8pufeI7BeGrtBtUU0c"
@@ -112,59 +144,70 @@ export default function RootLayout({
           </div>
         </div>
 
-        {/* MAIN HEADER WITH ROUNDED CONCENTRIC LOGO SEAL + DYNAMIC NAVBAR */}
+        {/* MAIN HEADER */}
         <header className="w-full bg-white border-b-2 border-geotrexx-black sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between gap-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-6">
               
-              <Link
-                href="/"
-                aria-label="GEOTREXX Home"
-                className="group shrink-0 py-2 flex items-center gap-3 no-underline cursor-pointer"
-              >
-                <div className="relative w-11 h-11 rounded-full border-2 border-geotrexx-black p-0.5 bg-white flex items-center justify-center transition-colors group-hover:border-geotrexx-crimson">
-                  <div className="relative w-full h-full rounded-full border border-geotrexx-crimson overflow-hidden bg-white flex items-center justify-center">
-                    <Image
-                      src="/geotrexx-logo.png"
-                      alt="GEOTREXX Seal"
-                      fill
-                      className="object-cover rounded-full"
-                      priority
-                    />
+              <div className="flex items-center justify-between py-2 border-b border-gray-200 lg:border-b-0">
+                <Link
+                  href="/"
+                  aria-label="GEOTREXX Home"
+                  className="group shrink-0 flex items-center gap-3 no-underline cursor-pointer"
+                >
+                  <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-geotrexx-black p-0.5 bg-white flex items-center justify-center transition-colors group-hover:border-geotrexx-crimson">
+                    <div className="relative w-full h-full rounded-full border border-geotrexx-crimson overflow-hidden bg-white flex items-center justify-center">
+                      <Image
+                        src="/geotrexx-logo.png"
+                        alt="GEOTREXX Seal"
+                        fill
+                        className="object-cover rounded-full"
+                        priority
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex flex-col">
-                  <span className="text-xl md:text-2xl font-black tracking-tighter uppercase text-geotrexx-black leading-none group-hover:text-geotrexx-crimson transition-colors">
-                    GEOTREXX
-                  </span>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-geotrexx-crimson leading-none mt-0.5">
-                    THE NEWS BELONGS TO THE PEOPLE
-                  </span>
-                </div>
-              </Link>
+                  <div className="flex flex-col">
+                    <span className="text-xl md:text-2xl font-black tracking-tighter uppercase text-geotrexx-black leading-none group-hover:text-geotrexx-crimson transition-colors">
+                      GEOTREXX
+                    </span>
+                    <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-geotrexx-crimson leading-none mt-0.5">
+                      FEARLESS AND FACTUAL
+                    </span>
+                  </div>
+                </Link>
+              </div>
 
               <NavBar />
 
             </div>
           </div>
 
-          {/* BREAKING NEWS TICKER */}
-          <div className="w-full bg-white border-t border-geotrexx-black overflow-hidden flex items-center h-9">
-            <div className="bg-geotrexx-crimson text-white text-[10px] font-black uppercase tracking-widest px-3 h-full flex items-center shrink-0 z-10">
-              BREAKING
-            </div>
-            <div className="overflow-hidden whitespace-nowrap w-full relative bg-white">
-              <div className="animate-ticker">
-                {[...tickerItems, ...tickerItems].map((item, index) => (
-                  <span key={index} className="inline-flex items-center text-xs font-bold text-geotrexx-black mx-8">
-                    <span className="w-1.5 h-1.5 bg-geotrexx-crimson mr-3 inline-block" />
-                    {item}
-                  </span>
-                ))}
+          {/* LIVE SANITY BREAKING NEWS TICKER (No Hardcoded Fake News) */}
+          {liveTickerArticles.length > 0 && (
+            <div className="w-full bg-white border-t border-geotrexx-black overflow-hidden flex items-center h-9">
+              <div className="bg-geotrexx-crimson text-white text-[10px] font-black uppercase tracking-widest px-3 h-full flex items-center shrink-0 z-10">
+                LATEST
+              </div>
+              <div className="overflow-hidden whitespace-nowrap w-full relative bg-white">
+                <div className="animate-ticker">
+                  {[...liveTickerArticles, ...liveTickerArticles].map((item, index) => (
+                    <Link
+                      key={`${item._id}-${index}`}
+                      href={`/news/${item.slug}`}
+                      className="inline-flex items-center text-xs font-bold text-geotrexx-black hover:text-geotrexx-crimson mx-8 no-underline transition-colors"
+                    >
+                      <span className="w-1.5 h-1.5 bg-geotrexx-crimson mr-2.5 inline-block shrink-0" />
+                      <span className="text-[10px] font-mono font-black uppercase text-geotrexx-crimson mr-2">
+                        {item.category}:
+                      </span>
+                      <span>{item.title}</span>
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </header>
 
         {/* MAIN CONTENT PORTAL */}
@@ -172,7 +215,7 @@ export default function RootLayout({
           {children}
         </div>
 
-        {/* CLEAN FOOTER WITH VERIFIED SOCIAL MEDIA LINKS & LOGOS */}
+        {/* CLEAN FOOTER */}
         <footer className="w-full bg-geotrexx-black text-white pt-14 pb-10 mt-16 border-t-4 border-geotrexx-crimson">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
@@ -200,14 +243,13 @@ export default function RootLayout({
                   </span>
                 </div>
               </Link>
-              <span className="text-xs font-mono uppercase tracking-widest text-geotrexx-grey">
-                STRAIGHT FACTS FROM THE SOURCE • THE NEWS BELONGS TO THE PEOPLE
+              <span className="text-xs font-mono font-bold uppercase tracking-widest text-geotrexx-grey">
+                Fearless and Factual
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12 border-b border-geotrexx-charcoal pb-12">
               
-              {/* Column 1: Core Desks */}
               <div>
                 <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-geotrexx-crimson mb-4">
                   News Desks
@@ -218,10 +260,10 @@ export default function RootLayout({
                   <li><Link href="/category/world" className="text-gray-300 hover:text-white no-underline">World, Africa & Diaspora</Link></li>
                   <li><Link href="/category/business" className="text-gray-300 hover:text-white no-underline">Business, Economy & Tech</Link></li>
                   <li><Link href="/category/sports" className="text-gray-300 hover:text-white no-underline">TREXXfield Sports</Link></li>
+                  <li><Link href="/search" className="text-gray-300 hover:text-white no-underline">Search Archive</Link></li>
                 </ul>
               </div>
 
-              {/* Column 2: ONLY Meet the Founders & Advertise With Us */}
               <div>
                 <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-geotrexx-crimson mb-4">
                   Organization
@@ -232,7 +274,6 @@ export default function RootLayout({
                 </ul>
               </div>
 
-              {/* Column 3: Legal & Standards */}
               <div>
                 <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-geotrexx-crimson mb-4">
                   Policies & Legal
@@ -244,14 +285,11 @@ export default function RootLayout({
                 </ul>
               </div>
 
-              {/* Column 4: Social Media & Connect (With Official Logos) */}
               <div>
                 <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-geotrexx-crimson mb-4">
                   Connect & Follow
                 </h4>
                 <ul className="space-y-3 text-xs font-bold uppercase tracking-wider list-none p-0 m-0">
-                  
-                  {/* 1. WhatsApp Channel */}
                   <li>
                     <a
                       href="https://whatsapp.com/channel/0029Vb8pufeI7BeGrtBtUU0c"
@@ -268,7 +306,6 @@ export default function RootLayout({
                     </a>
                   </li>
 
-                  {/* 2. Facebook — GEOTREXX Main */}
                   <li>
                     <a
                       href="https://www.facebook.com/Geotrexx1"
@@ -285,7 +322,6 @@ export default function RootLayout({
                     </a>
                   </li>
 
-                  {/* 3. Facebook — Totally Barça / Sports Network */}
                   <li>
                     <a
                       href="https://www.facebook.com/Granite.WebGad"
@@ -302,7 +338,6 @@ export default function RootLayout({
                     </a>
                   </li>
 
-                  {/* 4. YouTube — @geotrexx_field */}
                   <li>
                     <a
                       href="https://youtube.com/@geotrexx_field?si=XmM6VxcO6ce21yed"
@@ -319,7 +354,6 @@ export default function RootLayout({
                     </a>
                   </li>
 
-                  {/* 5. TikTok — @nexus_news_ */}
                   <li>
                     <a
                       href="https://www.tiktok.com/@nexus_news_"
@@ -335,7 +369,6 @@ export default function RootLayout({
                       <span>TikTok (@nexus_news_)</span>
                     </a>
                   </li>
-
                 </ul>
               </div>
 
