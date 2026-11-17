@@ -1,46 +1,33 @@
-import { client } from '../../sanity/lib/client';
+import { MetadataRoute } from 'next';
+import { client } from '@/sanity/lib/client';
 
-export const revalidate = 3600; 
-
-export async function GET() {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.geotrexx.com';
-  
-  const query = `*[_type == "article" && defined(slug.current)] | order(publishedAt desc) {
-    "slug": slug.current,
-    publishedAt
-  }`;
-  
-  const articles = await client.fetch(query, {}, { next: { tags: ['articles'] } });
+  let articleEntries: MetadataRoute.Sitemap = [];
 
-  // THE FIX: Removed the TypeScript ": any" annotation from the map function
-  const articleUrls = articles.map((article) => `
-  <url>
-    <loc>${baseUrl}/news/${article.slug}</loc>
-    <lastmod>${article.publishedAt ? new Date(article.publishedAt).toISOString() : new Date().toISOString()}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>`).join('');
+  try {
+    const articles = await client.fetch(
+      `*[_type in ["article", "post"] && defined(slug.current)]{ "slug": slug.current, "updatedAt": coalesce(_updatedAt, publishedAt, _createdAt) }`
+    );
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${baseUrl}</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>always</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url><loc>${baseUrl}/category/ghana</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  <url><loc>${baseUrl}/category/politics</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  <url><loc>${baseUrl}/category/business</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  <url><loc>${baseUrl}/category/world</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  <url><loc>${baseUrl}/category/sports</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  <url><loc>${baseUrl}/category/stem</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  <url><loc>${baseUrl}/category/entertainment</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  ${articleUrls}
-</urlset>`;
+    articleEntries = (articles || []).map((art: any) => ({
+      url: `${baseUrl}/news/${art.slug}`,
+      lastModified: art.updatedAt ? new Date(art.updatedAt) : new Date(),
+      changeFrequency: 'daily' as const,
+      priority: 0.8,
+    }));
+  } catch (err) {
+    console.error('Sitemap Sanity fetch error:', err);
+  }
 
-  return new Response(xml, {
-    status: 200,
-    headers: { 'Content-Type': 'application/xml' },
-  });
+  return [
+    { url: baseUrl, lastModified: new Date(), changeFrequency: 'hourly', priority: 1 },
+    { url: `${baseUrl}/category/ghana`, lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
+    { url: `${baseUrl}/category/politics`, lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
+    { url: `${baseUrl}/category/world`, lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
+    { url: `${baseUrl}/category/business`, lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
+    { url: `${baseUrl}/category/sports`, lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
+    { url: `${baseUrl}/founders`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
+    ...articleEntries,
+  ];
 }

@@ -1,9 +1,16 @@
 export const apiVersion =
-  process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2024-03-01'
+  process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2024-07-11';
 
-export const dataset = 'production'
+const cleanedProjectId = (process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || '')
+  .trim()
+  .toLowerCase()
+  .replace(/[^a-z0-9-]/g, '');
 
-export const projectId = 'x0tpoga9'
+export const projectId = cleanedProjectId || 'x0tpoga9';
 
-// 🔥 Hardcoded to false so Sanity allows file uploads instead of just reading cached data
-export const useCdn = false
+const cleanedDataset = (process.env.NEXT_PUBLIC_SANITY_DATASET || '')
+  .trim()
+  .toLowerCase()
+  .replace(/[^a-z0-9_-]/g, '');
+
+export const dataset = cleanedDataset || 'production';
