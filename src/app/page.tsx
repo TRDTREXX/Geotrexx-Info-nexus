@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { client } from '@/sanity/lib/client';
 import { urlFor } from '@/sanity/lib/image';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function toPlainText(blocks: any) {
   if (!blocks) return '';
@@ -27,31 +28,43 @@ function toSlug(str: string) {
     .replace(/^-|-$/g, '');
 }
 
-// Extracts the exact valid Sanity date and converts to Unix ms for strict sorting
 function resolveExactDate(post: any): { iso: string; timestamp: number; formatted: string } {
-  const candidates = [post.publishedAt, post.publishDate, post.date, post._createdAt];
-  for (const raw of candidates) {
+  const primaryCandidates = [post.publishedAt, post.publishDate, post.date, post._createdAt];
+  let bestMs = 0;
+
+  for (const raw of primaryCandidates) {
     if (raw && typeof raw === 'string' && raw.trim().length > 0) {
       const ms = Date.parse(raw);
       if (!Number.isNaN(ms)) {
-        const d = new Date(ms);
-        return {
-          iso: d.toISOString(),
-          timestamp: ms,
-          formatted: d.toLocaleDateString('en-GB', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-            timeZone: 'Africa/Accra',
-          }),
-        };
+        bestMs = ms;
+        break;
       }
     }
   }
+
+  if (bestMs === 0 && post._createdAt) {
+    const fallbackMs = Date.parse(post._createdAt);
+    if (!Number.isNaN(fallbackMs)) bestMs = fallbackMs;
+  }
+
+  if (bestMs > 0) {
+    const d = new Date(bestMs);
+    return {
+      iso: d.toISOString(),
+      timestamp: bestMs,
+      formatted: d.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'Africa/Accra',
+      }),
+    };
+  }
+
   return { iso: '', timestamp: 0, formatted: '' };
 }
 
-const HOME_QUERY = `*[_type in ["article", "post"] && defined(slug.current) && defined(mainImage.asset)] {
+const HOME_QUERY = `*[_type in ["article", "post"] && defined(slug.current) && defined(mainImage.asset) && !(_id in path("drafts.**"))] | order(coalesce(publishedAt, publishDate, date, _createdAt) desc) [0...100] {
   _id,
   title,
   "slug": slug.current,
@@ -80,6 +93,7 @@ const HOME_QUERY = `*[_type in ["article", "post"] && defined(slug.current) && d
   publishDate,
   date,
   _createdAt,
+  _updatedAt,
   mainImage
 }`;
 
@@ -149,7 +163,7 @@ function mapSanityDesk(article: any) {
 export default async function Home() {
   let rawPosts: any[] = [];
   try {
-    rawPosts = await client.fetch(HOME_QUERY);
+    rawPosts = await client.fetch(HOME_QUERY, {}, { cache: 'no-store' });
   } catch (err) {
     console.error('Sanity fetch error:', err);
   }
@@ -157,9 +171,8 @@ export default async function Home() {
   const seenIds = new Set<string>();
   const seenTitles = new Set<string>();
 
-  // Map and sort strictly by exact Sanity numeric timestamp (Newest -> Oldest)
   const allUnique = rawPosts
-    .filter((a) => Boolean(a.mainImage?.asset) && toPlainText(a.body).trim().length >= 300)
+    .filter((a) => Boolean(a.mainImage?.asset) && (toPlainText(a.body).trim().length >= 80 || toPlainText(a.summary).trim().length >= 40))
     .map(mapSanityDesk)
     .sort((a, b) => b.exactTimestamp - a.exactTimestamp)
     .filter((item) => {

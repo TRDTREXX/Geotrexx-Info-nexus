@@ -3,7 +3,8 @@ import Image from 'next/image';
 import { client } from '@/sanity/lib/client';
 import { urlFor } from '@/sanity/lib/image';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function toPlainText(blocks: any) {
   if (!blocks) return '';
@@ -122,7 +123,7 @@ const SECTION_CONFIG: Record<
   },
 };
 
-const SECTION_QUERY = `*[_type in ["article", "post"] && defined(slug.current) && defined(mainImage.asset)] {
+const SECTION_QUERY = `*[_type in ["article", "post"] && defined(slug.current) && defined(mainImage.asset) && !(_id in path("drafts.**"))] | order(coalesce(publishedAt, publishDate, date, _createdAt) desc) {
   _id,
   title,
   "slug": slug.current,
@@ -147,7 +148,7 @@ export default async function CategorySectionPage({
   const { section } = await params;
   const normalizedSection = decodeURIComponent(section).toLowerCase();
 
-  const rawPosts: any[] = await client.fetch(SECTION_QUERY);
+  const rawPosts: any[] = await client.fetch(SECTION_QUERY, {}, { cache: 'no-store' });
 
   const config = SECTION_CONFIG[normalizedSection] || {
     title: section.replace(/-/g, ' '),
@@ -158,7 +159,11 @@ export default async function CategorySectionPage({
 
   const matchedArticles = rawPosts
     .filter((post) => {
-      if (!post.mainImage?.asset || toPlainText(post.body).length < 300) return false;
+      if (!post.mainImage?.asset) return false;
+      const bodyLen = toPlainText(post.body).trim().length;
+      const sumLen = toPlainText(post.summary).trim().length;
+      if (bodyLen < 80 && sumLen < 40) return false;
+
       const cat = (post.rawCategory || '').trim();
       const sub = (post.rawSubsection || '').trim();
       const title = (post.title || '').toLowerCase();

@@ -3,7 +3,8 @@ import Image from 'next/image';
 import { client } from '@/sanity/lib/client';
 import { urlFor } from '@/sanity/lib/image';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function toPlainText(blocks: any) {
   if (!blocks) return '';
@@ -69,7 +70,7 @@ const SUBSECTION_KEYWORDS: Record<string, string[]> = {
   tactics: ['tactic', 'transfer', 'analysis', 'scout', 'signing', 'contract', 'lineup', 'formation', 'oracle'],
 };
 
-const SUBSECTION_QUERY = `*[_type in ["article", "post"] && defined(slug.current) && defined(mainImage.asset)] {
+const SUBSECTION_QUERY = `*[_type in ["article", "post"] && defined(slug.current) && defined(mainImage.asset) && !(_id in path("drafts.**"))] | order(coalesce(publishedAt, publishDate, date, _createdAt) desc) {
   _id,
   title,
   "slug": slug.current,
@@ -105,7 +106,7 @@ export default async function CategorySubsectionPage({
   const normalizedSection = decodeURIComponent(section).toLowerCase();
   const normalizedSub = decodeURIComponent(subsection).toLowerCase();
 
-  const rawPosts: any[] = await client.fetch(SUBSECTION_QUERY);
+  const rawPosts: any[] = await client.fetch(SUBSECTION_QUERY, {}, { cache: 'no-store' });
 
   const allPosts = rawPosts
     .map((post) => {
@@ -131,7 +132,7 @@ export default async function CategorySubsectionPage({
         resolvedAuthorSlug: post.authorSlug || toSlug(post.authorName || 'Orpheus Grant-Essilfie'),
       };
     })
-    .filter((p) => p.imageUrl && p.bodyText.length >= 300)
+    .filter((p) => p.imageUrl && (p.bodyText.length >= 80 || p.cleanSummary.length >= 40))
     .sort((a, b) => b.exactTimestamp - a.exactTimestamp);
 
   const subKeywords = SUBSECTION_KEYWORDS[normalizedSub] || [

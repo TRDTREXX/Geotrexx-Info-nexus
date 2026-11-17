@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { client } from '@/sanity/lib/client';
 import { urlFor } from '@/sanity/lib/image';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function toPlainText(blocks: any) {
   if (!blocks) return '';
@@ -58,7 +59,7 @@ const AUTHOR_ARCHIVE_QUERY = `{
     bio,
     image
   },
-  "articles": *[_type in ["article", "post"] && defined(slug.current) && defined(mainImage.asset)] {
+  "articles": *[_type in ["article", "post"] && defined(slug.current) && defined(mainImage.asset) && !(_id in path("drafts.**"))] | order(coalesce(publishedAt, publishDate, date, _createdAt) desc) {
     _id,
     title,
     "slug": slug.current,
@@ -91,7 +92,7 @@ export default async function AuthorDashboardPage({ params }: { params: Promise<
   const { slug } = await params;
   const normalizedSlug = decodeURIComponent(slug).toLowerCase();
 
-  const data = await client.fetch(AUTHOR_ARCHIVE_QUERY);
+  const data = await client.fetch(AUTHOR_ARCHIVE_QUERY, {}, { cache: 'no-store' });
   const authors: any[] = data?.authors || [];
   const allArticles: any[] = data?.articles || [];
 
@@ -99,7 +100,9 @@ export default async function AuthorDashboardPage({ params }: { params: Promise<
 
   const authorArticles = allArticles
     .filter((art) => {
-      if (toPlainText(art.body).trim().length < 300) return false;
+      const bodyLen = toPlainText(art.body).trim().length;
+      const sumLen = toPlainText(art.summary).trim().length;
+      if (bodyLen < 80 && sumLen < 40) return false;
       if (matchedAuthor && art.authorId === matchedAuthor._id) return true;
       if (art.authorSlug && art.authorSlug.toLowerCase() === normalizedSlug) return true;
       if (art.authorName && toSlug(art.authorName) === normalizedSlug) return true;
