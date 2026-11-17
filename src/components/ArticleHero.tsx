@@ -7,8 +7,7 @@ interface ArticleHeroProps {
   onBack: () => void;
 }
 
-export const ArticleHero: React.FC<ArticleHeroProps> = ({ article, onBack }) => {
-  const formattedDate = new Date(article.publishedAt).toLocaleDateString('en-GB', {
+const formattedDate = new Date(article.publishedAt).toLocaleDateString('en-GB', {
     day: 'numeric', month: 'long', year: 'numeric'
   });
 
