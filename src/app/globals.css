@@ -1,54 +1,104 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=JetBrains+Mono:wght@400;600&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-@plugin "@tailwindcss/typography";
-
-@custom-variant dark (&:is(.dark *));
-
 @theme {
-/* ... the rest of your colors and theme variables remain the same ... */
-  /* Your Exact GEOTREXX Brand Colors */
-  --color-geo-red: #C8102E;
-  --color-geo-dark: #0a0b10;
-  --color-geo-gray: #1a1b23;
-  --color-geo-light: #f9fafb;
-  
-  /* Upgraded Editorial Fonts */
-  --font-sans: "Plus Jakarta Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-serif: "Newsreader", Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-headline: "Oswald", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --color-geotrexx-crimson: #C8102E;
+  --color-geotrexx-black: #101114;
+  --color-geotrexx-charcoal: #292A2E;
+  --color-geotrexx-grey: #A7A8AD;
+
+  --font-sans: var(--font-public-sans), system-ui, sans-serif;
+  --font-serif: var(--font-merriweather), Georgia, serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
 }
 
-body {
-  color: #111827; 
-  background-color: #faf9f6; 
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
+/* Hides the scrollbar for the horizontal navigation menu */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* Your exact dark mode is preserved untouched */
-.dark body {
-  color: #e5e7eb; 
-  background-color: #0a0b10;
+/* Infinite Ticker Animation */
+@keyframes ticker {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
-/* Your exact custom scrollbar is preserved */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background-color: transparent; }
-::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 9999px; }
-.dark ::-webkit-scrollbar-thumb { background-color: #374151; }
-::-webkit-scrollbar-thumb:hover { background-color: var(--color-geo-red); }
-
-/* Your exact ticker animation is preserved */
-@keyframes ticker-marquee {
-  0% { transform: translateX(100vw); }
-  100% { transform: translateX(-100%); }
-}
 .animate-ticker {
-  display: inline-block;
-  white-space: nowrap;
-  animation: ticker-marquee 30s linear infinite;
-  padding-left: 100%;
+  display: flex;
+  width: max-content;
+  animation: ticker 35s linear infinite;
+}
+
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
+
+/* =========================================================
+   LIGHT MODE: 100% PURE WHITE ENFORCEMENT
+========================================================= */
+html:not(.dark),
+html:not(.dark) body,
+html:not(.dark) main,
+html:not(.dark) section,
+html:not(.dark) article,
+html:not(.dark) header {
+  background-color: #FFFFFF !important;
+  color: #101114;
+}
+
+/* Kills fainted off-white backgrounds on subpages in Light Mode */
+html:not(.dark) .bg-gray-50,
+html:not(.dark) .bg-slate-50,
+html:not(.dark) .bg-zinc-50,
+html:not(.dark) .bg-neutral-50,
+html:not(.dark) .bg-stone-50,
+html:not(.dark) .bg-gray-100 {
+  background-color: #FFFFFF !important;
+}
+
+/* =========================================================
+   DARK MODE: AP HIGH-CONTRAST OBSIDIAN OVERRIDES
+========================================================= */
+html.dark,
+html.dark body,
+html.dark main,
+html.dark section,
+html.dark article,
+html.dark header,
+html.dark nav,
+html.dark .bg-white,
+html.dark .bg-gray-50,
+html.dark .bg-slate-50,
+html.dark .bg-zinc-50,
+html.dark .bg-neutral-50,
+html.dark .bg-gray-100 {
+  background-color: #101114 !important;
+  color: #FFFFFF !important;
+}
+
+html.dark .text-geotrexx-black,
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-gray-700,
+html.dark .text-gray-600,
+html.dark .text-gray-500 {
+  color: #EAEAEA !important;
+}
+
+html.dark .border-geotrexx-black,
+html.dark .border-gray-300,
+html.dark .border-gray-200 {
+  border-color: #292A2E !important;
+}
+
+html.dark .divide-gray-300 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #292A2E !important;
 }

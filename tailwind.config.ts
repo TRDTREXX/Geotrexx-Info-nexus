@@ -1,39 +1,29 @@
-import type { Config } from 'tailwindcss'
+import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: 'class', // CRITICAL for next-themes
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/**/*.{js,ts,jsx,tsx,mdx}',
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
         geotrexx: {
-          red: '#dc2626',
-          dark: '#0a0b10',
-          light: '#f4f5f7'
-        }
-      },
-      animation: {
-        // Fixes the stuck ticker
-        'marquee': 'marquee 25s linear infinite', 
-      },
-      keyframes: {
-        marquee: {
-          '0%': { transform: 'translateX(100%)' },
-          '100%': { transform: 'translateX(-100%)' },
+          crimson: "#C8102E",
+          black: "#101114",
+          charcoal: "#292A2E",
+          grey: "#A7A8AD",
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      }
+        // Maps to the CSS variables defined in layout.tsx
+        sans: ['var(--font-public-sans)', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-merriweather)', 'Georgia', 'serif'],
+      },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-  ],
-}
-export default config
+  plugins: [],
+};
+
+export default config;

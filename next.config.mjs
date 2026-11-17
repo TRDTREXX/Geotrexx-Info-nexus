@@ -5,15 +5,13 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'cdn.sanity.io',
+        pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 'media.graphassets.com',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-      }
     ],
   },
 };

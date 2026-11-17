@@ -1,10 +1,8 @@
 import { createClient } from 'next-sanity'
 
-import { apiVersion, dataset, projectId, useCdn } from '../env'
-
 export const client = createClient({
-  projectId,
-  dataset,
-  apiVersion,
-  useCdn,
+  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'your_project_id',
+  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
+  apiVersion: '2024-01-01',
+  useCdn: false, // Set to false so new articles show up immediately
 })
