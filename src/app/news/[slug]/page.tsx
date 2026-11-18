@@ -6,7 +6,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import ShareBar from '../../../components/ShareBar';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function toPlainText(blocks: any) {
   if (!blocks) return '';
@@ -22,19 +23,43 @@ function toPlainText(blocks: any) {
   return '';
 }
 
+function resolveInlineImageUrl(value: any): string | null {
+  try {
+    if (!value) return null;
+    if (typeof value.url === 'string') return value.url;
+    if (typeof value?.asset?.url === 'string') return value.asset.url;
+    if (value?.asset?._ref || value?.asset?._id || value?.image?.asset) {
+      const target = value.image?.asset ? value.image : value;
+      return urlFor(target).width(1200).auto('format').url();
+    }
+    return urlFor(value).width(1200).auto('format').url();
+  } catch (err) {
+    console.error('Inline image resolution error:', err);
+    return null;
+  }
+}
+
 const query = `*[_type in ["article", "post"] && slug.current == $slug][0]{
   title,
   summary,
   publishedAt,
+  publishDate,
+  date,
   _createdAt,
   _updatedAt,
-  "categoryName": category,
+  "categoryName": coalesce(category->title, category, section, "News"),
   "subsectionName": coalesce(subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness, subsection),
   "authorName": author->name,
   "authorSlug": author->slug.current,
   "authorImage": author->image,
   mainImage,
-  body
+  body[]{
+    ...,
+    _type == "image" => {
+      ...,
+      asset->
+    }
+  }
 }`;
 
 export async function generateMetadata({
@@ -43,7 +68,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const resolvedParams = await params;
-  const article = await client.fetch(query, { slug: resolvedParams.slug });
+  const article = await client.fetch(query, { slug: resolvedParams.slug }, { cache: 'no-store' });
 
   if (!article) return {};
 
@@ -81,42 +106,114 @@ export async function generateMetadata({
   };
 }
 
+function InlineImageRenderer({ value }: { value: any }) {
+  const imgUrl = resolveInlineImageUrl(value);
+  if (!imgUrl) return null;
+
+  const caption = value?.caption || value?.title || '';
+  const attribution = value?.attribution || value?.credit || value?.source || '';
+  const altText = value?.alt || caption || 'GEOTREXX report image';
+
+  return (
+    <figure className="my-10 w-full clear-both">
+      <div className="w-full overflow-hidden border-2 border-geotrexx-black bg-white">
+        <img
+          src={imgUrl}
+          alt={altText}
+          loading="lazy"
+          className="w-full h-auto block object-contain max-h-[750px] mx-auto"
+        />
+      </div>
+      {(caption || attribution) && (
+        <figcaption className="mt-2.5 px-1 text-left border-l-2 border-[#C8102E] pl-3">
+          {caption && (
+            <p className="text-sm text-gray-800 leading-snug font-serif">
+              {caption}
+            </p>
+          )}
+          {attribution && (
+            <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500 font-mono">
+              Photo: {attribution}
+            </span>
+          )}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
 const ptComponents = {
   types: {
-    image: ({ value }: any) => {
-      if (!value?.asset?._ref) return null;
-
+    image: InlineImageRenderer,
+    customImage: InlineImageRenderer,
+    blockImage: InlineImageRenderer,
+    inlineImage: InlineImageRenderer,
+  },
+  block: {
+    normal: ({ children }: any) => (
+      <p className="mb-6 text-lg md:text-xl font-serif text-geotrexx-black leading-[1.85] whitespace-pre-line">
+        {children}
+      </p>
+    ),
+    h1: ({ children }: any) => (
+      <h2 className="mt-10 mb-4 text-2xl md:text-3xl font-sans font-black uppercase tracking-tight text-geotrexx-black">
+        {children}
+      </h2>
+    ),
+    h2: ({ children }: any) => (
+      <h2 className="mt-10 mb-4 text-2xl md:text-3xl font-sans font-black tracking-tight text-geotrexx-black border-b border-gray-200 pb-2">
+        {children}
+      </h2>
+    ),
+    h3: ({ children }: any) => (
+      <h3 className="mt-8 mb-3 text-xl md:text-2xl font-sans font-extrabold tracking-tight text-geotrexx-black">
+        {children}
+      </h3>
+    ),
+    h4: ({ children }: any) => (
+      <h4 className="mt-6 mb-2 text-lg md:text-xl font-sans font-bold text-geotrexx-black">
+        {children}
+      </h4>
+    ),
+    blockquote: ({ children }: any) => (
+      <blockquote className="my-8 pl-5 border-l-4 border-[#C8102E] italic text-lg md:text-xl font-serif text-gray-800 bg-gray-50 py-3 pr-4">
+        {children}
+      </blockquote>
+    ),
+  },
+  list: {
+    bullet: ({ children }: any) => (
+      <ul className="mb-6 ml-6 list-disc space-y-2.5 text-lg md:text-xl font-serif text-geotrexx-black leading-[1.85]">
+        {children}
+      </ul>
+    ),
+    number: ({ children }: any) => (
+      <ol className="mb-6 ml-6 list-decimal space-y-2.5 text-lg md:text-xl font-serif text-geotrexx-black leading-[1.85]">
+        {children}
+      </ol>
+    ),
+  },
+  listItem: {
+    bullet: ({ children }: any) => <li className="pl-1">{children}</li>,
+    number: ({ children }: any) => <li className="pl-1">{children}</li>,
+  },
+  marks: {
+    strong: ({ children }: any) => (
+      <strong className="font-bold text-geotrexx-black">{children}</strong>
+    ),
+    em: ({ children }: any) => <em className="italic">{children}</em>,
+    link: ({ value, children }: any) => {
+      const href = value?.href || '#';
+      const isExternal = href.startsWith('http');
       return (
-        <figure className="not-prose my-10 w-full clear-both">
-          <div
-            className="w-full overflow-hidden border border-geotrexx-black"
-            style={{ backgroundColor: '#ffffff' }}
-          >
-            <Image
-              src={urlFor(value).url()}
-              alt={value.alt || 'Article inline image'}
-              width={1200}
-              height={800}
-              style={{ width: '100%', height: 'auto' }}
-              unoptimized
-              priority
-            />
-          </div>
-          {(value.caption || value.attribution) && (
-            <figcaption className="mt-2.5 px-1 text-left border-l-2 border-[#C8102E] pl-3">
-              {value.caption && (
-                <p className="text-sm text-gray-800 leading-snug font-serif">
-                  {value.caption}
-                </p>
-              )}
-              {value.attribution && (
-                <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500 font-mono">
-                  Photo: {value.attribution}
-                </span>
-              )}
-            </figcaption>
-          )}
-        </figure>
+        <a
+          href={href}
+          target={isExternal ? '_blank' : undefined}
+          rel={isExternal ? 'noopener noreferrer' : undefined}
+          className="text-[#C8102E] underline underline-offset-4 hover:text-black transition-colors font-semibold"
+        >
+          {children}
+        </a>
       );
     },
   },
@@ -132,7 +229,7 @@ export default async function ArticlePage({
   const article = await client.fetch(
     query,
     { slug: resolvedParams.slug },
-    { next: { tags: ['articles', `article-${resolvedParams.slug}`] } }
+    { cache: 'no-store' }
   );
 
   if (!article) {
@@ -161,12 +258,14 @@ export default async function ArticlePage({
     ? urlFor(article.authorImage).width(160).height(160).url()
     : undefined;
 
-  const exactDate = article.publishedAt || article._createdAt;
+  const exactDate =
+    article.publishedAt || article.publishDate || article.date || article._createdAt;
   const formattedDate = exactDate
     ? new Date(exactDate).toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
+        timeZone: 'Africa/Accra',
       })
     : '';
 
@@ -213,10 +312,10 @@ export default async function ArticlePage({
 
         <div className="border-t-[3px] border-geotrexx-black pt-3 mb-4 flex flex-wrap items-center gap-2">
           <Link
-            href={`/category/${(article.categoryName || 'ghana').toLowerCase()}`}
+            href={`/category/${String(article.categoryName || 'ghana').toLowerCase()}`}
             className="bg-[#C8102E] text-white text-[11px] font-mono font-bold uppercase tracking-widest px-2.5 py-1 no-underline"
           >
-            {article.categoryName ? article.categoryName.toUpperCase() : 'NEWS'}
+            {article.categoryName ? String(article.categoryName).toUpperCase() : 'NEWS'}
           </Link>
           {article.subsectionName && (
             <>
@@ -233,7 +332,7 @@ export default async function ArticlePage({
         </h1>
 
         {cleanSummary && (
-          <p className="text-lg md:text-xl text-gray-800 font-serif leading-relaxed mb-6">
+          <p className="text-lg md:text-xl text-gray-800 font-serif leading-relaxed mb-6 whitespace-pre-line">
             {cleanSummary}
           </p>
         )}
@@ -259,8 +358,22 @@ export default async function ArticlePage({
           </div>
         )}
 
-        <div className="prose prose-lg md:prose-xl max-w-none text-geotrexx-black font-serif leading-[1.85] prose-a:text-[#C8102E] mt-6">
-          <PortableText value={article.body} components={ptComponents} />
+        <div className="max-w-none text-geotrexx-black font-serif mt-8">
+          {typeof article.body === 'string' ? (
+            article.body
+              .split(/\n\s*\n/)
+              .filter(Boolean)
+              .map((para: string, idx: number) => (
+                <p
+                  key={idx}
+                  className="mb-6 text-lg md:text-xl font-serif text-geotrexx-black leading-[1.85] whitespace-pre-line"
+                >
+                  {para}
+                </p>
+              ))
+          ) : (
+            <PortableText value={article.body} components={ptComponents} />
+          )}
         </div>
       </article>
     </main>
