@@ -71,7 +71,7 @@ const HOME_QUERY = `*[_type in ["article", "post"] && defined(slug.current) && d
   summary,
   body,
   "rawCategory": lower(coalesce(category->title, category, section, "")),
-  "rawSubsection": lower(coalesce(
+  "rawSubsection": coalesce(
     subGhana,
     subPolitics,
     subSports,
@@ -85,7 +85,7 @@ const HOME_QUERY = `*[_type in ["article", "post"] && defined(slug.current) && d
     subsection,
     subCategory,
     ""
-  )),
+  ),
   "authorName": coalesce(author->name, "Orpheus Grant-Essilfie"),
   "authorSlug": author->slug.current,
   "location": coalesce(location, dateline, "ACCRA"),
@@ -99,38 +99,39 @@ const HOME_QUERY = `*[_type in ["article", "post"] && defined(slug.current) && d
 
 function mapSanityDesk(article: any) {
   const cat = (article.rawCategory || '').trim();
-  const sub = (article.rawSubsection || '').trim();
+  const subRaw = String(article.rawSubsection || '').trim();
+  const subLower = subRaw.toLowerCase();
   const title = (article.title || '').toLowerCase();
   const dateObj = resolveExactDate(article);
 
   let desk = 'ghana';
   let deskLabel = 'Ghana';
-  let subLabel = sub ? sub.replace(/-/g, ' ') : 'National';
+  let subLabel = subRaw ? subRaw.replace(/[-_]+/g, ' ') : 'National';
 
-  if (cat.includes('sport') || cat.includes('trexxfield') || sub.includes('sport')) {
+  if (cat.includes('sport') || cat.includes('trexxfield') || subLower.includes('sport')) {
     desk = 'sports';
     deskLabel = 'TREXXfield';
-    subLabel = sub ? sub.replace(/-/g, ' ') : 'Football';
-  } else if (cat.includes('stem') || cat.includes('tech') || sub.includes('stem') || sub.includes('tech')) {
+    subLabel = subRaw ? subRaw.replace(/[-_]+/g, ' ') : 'Football';
+  } else if (cat.includes('stem') || cat.includes('tech') || subLower.includes('stem') || subLower.includes('tech')) {
     desk = 'business';
     deskLabel = 'Business & Tech';
-    subLabel = 'Tech & STEM';
-  } else if (cat.includes('business') || cat.includes('econom') || sub.includes('business') || sub.includes('econom')) {
+    subLabel = subRaw ? subRaw.replace(/[-_]+/g, ' ') : 'Tech & STEM';
+  } else if (cat.includes('business') || cat.includes('econom') || subLower.includes('business') || subLower.includes('econom')) {
     desk = 'business';
     deskLabel = 'Business & Tech';
-    subLabel = sub ? sub.replace(/-/g, ' ') : 'Economy & Markets';
-  } else if (cat.includes('politic') || cat.includes('opinion') || sub.includes('politic')) {
+    subLabel = subRaw ? subRaw.replace(/[-_]+/g, ' ') : 'Economy & Markets';
+  } else if (cat.includes('politic') || cat.includes('opinion') || subLower.includes('politic')) {
     desk = 'politics';
     deskLabel = 'Politics';
-    subLabel = sub ? sub.replace(/-/g, ' ') : 'Politics';
-  } else if (cat.includes('world') || cat.includes('africa') || sub.includes('world') || sub.includes('diaspora')) {
+    subLabel = subRaw ? subRaw.replace(/[-_]+/g, ' ') : 'Politics';
+  } else if (cat.includes('world') || cat.includes('africa') || subLower.includes('world') || subLower.includes('diaspora')) {
     desk = 'world';
     deskLabel = 'World';
-    subLabel = sub ? sub.replace(/-/g, ' ') : 'World & Diaspora';
+    subLabel = subRaw ? subRaw.replace(/[-_]+/g, ' ') : 'World & Diaspora';
   } else if (cat.includes('ghana') || cat.includes('entertainment')) {
     desk = 'ghana';
     deskLabel = 'Ghana';
-    subLabel = sub ? sub.replace(/-/g, ' ') : 'National';
+    subLabel = subRaw ? subRaw.replace(/[-_]+/g, ' ') : 'National';
   } else {
     if (['barca', 'barcelona', 'arsenal', 'liverpool', 'ucl', 'premier league', 'black stars', 'gfa', 'football'].some((k) => title.includes(k))) {
       desk = 'sports';
@@ -156,7 +157,7 @@ function mapSanityDesk(article: any) {
     formattedDate: dateObj.formatted,
     resolvedAuthorSlug: article.authorSlug || toSlug(article.authorName || 'Orpheus Grant-Essilfie'),
     cleanSummary: toPlainText(article.summary).trim() || `${toPlainText(article.body).slice(0, 180)}...`,
-    imageUrl: urlFor(article.mainImage).width(1000).height(650).url(),
+    imageUrl: urlFor(article.mainImage).width(1200).height(750).fit('crop').auto('format').quality(85).url(),
   };
 }
 
@@ -235,8 +236,8 @@ export default async function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 mb-12">
         <div className="lg:col-span-8 flex flex-col lg:border-r lg:border-geotrexx-black lg:pr-10">
           <Link href={`/news/${leadArticle.slug}`} className="group block cursor-pointer no-underline">
-            <div className="relative w-full aspect-video mb-4 bg-white border border-geotrexx-black overflow-hidden">
-              <Image src={leadArticle.imageUrl} alt={leadArticle.title} fill className="object-cover rounded-none" priority />
+            <div className="relative w-full aspect-[16/10] mb-4 bg-white border border-geotrexx-black overflow-hidden">
+              <Image src={leadArticle.imageUrl} alt={leadArticle.title} fill className="object-cover object-top rounded-none" priority />
             </div>
 
             <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -281,7 +282,7 @@ export default async function Home() {
                 {relatedToLead.map((item) => (
                   <Link key={item._id} href={`/news/${item.slug}`} className="group flex flex-col no-underline">
                     <div className="relative w-full aspect-[16/10] mb-2 border border-geotrexx-black overflow-hidden bg-white">
-                      <Image src={item.imageUrl} alt={item.title} fill className="object-cover rounded-none" />
+                      <Image src={item.imageUrl} alt={item.title} fill className="object-cover object-top rounded-none" />
                     </div>
                     <span className="text-[10px] font-mono text-gray-600 mb-0.5">
                       {item.formattedDate}
@@ -306,7 +307,7 @@ export default async function Home() {
             {sidebarArticles.map((article) => (
               <Link key={article._id} href={`/news/${article.slug}`} className="py-3.5 group flex items-start gap-3.5 cursor-pointer no-underline">
                 <div className="relative w-24 h-16 shrink-0 border border-geotrexx-black overflow-hidden bg-white mt-0.5">
-                  <Image src={article.imageUrl} alt={article.title} fill className="object-cover rounded-none" />
+                  <Image src={article.imageUrl} alt={article.title} fill className="object-cover object-top rounded-none" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
@@ -343,8 +344,8 @@ export default async function Home() {
               </div>
 
               <Link href={`/news/${ghanaLead.slug}`} className="group block no-underline bg-white border border-geotrexx-black border-l-4 border-l-geotrexx-black mb-5">
-                <div className="relative w-full aspect-video border-b border-geotrexx-black overflow-hidden bg-white">
-                  <Image src={ghanaLead.imageUrl} alt={ghanaLead.title} fill className="object-cover rounded-none" />
+                <div className="relative w-full aspect-[16/10] border-b border-geotrexx-black overflow-hidden bg-white">
+                  <Image src={ghanaLead.imageUrl} alt={ghanaLead.title} fill className="object-cover object-top rounded-none" />
                 </div>
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-1">
@@ -368,7 +369,7 @@ export default async function Home() {
                 {ghanaStories.map((item) => (
                   <Link key={item._id} href={`/news/${item.slug}`} className="py-3.5 group flex items-start gap-4 no-underline">
                     <div className="relative w-28 h-20 shrink-0 border border-geotrexx-black overflow-hidden bg-white">
-                      <Image src={item.imageUrl} alt={item.title} fill className="object-cover rounded-none" />
+                      <Image src={item.imageUrl} alt={item.title} fill className="object-cover object-top rounded-none" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
@@ -403,8 +404,8 @@ export default async function Home() {
               </div>
 
               <Link href={`/news/${worldLead.slug}`} className="group block no-underline bg-white border border-geotrexx-black border-l-4 border-l-geotrexx-crimson mb-5">
-                <div className="relative w-full aspect-video border-b border-geotrexx-black overflow-hidden bg-white">
-                  <Image src={worldLead.imageUrl} alt={worldLead.title} fill className="object-cover rounded-none" />
+                <div className="relative w-full aspect-[16/10] border-b border-geotrexx-black overflow-hidden bg-white">
+                  <Image src={worldLead.imageUrl} alt={worldLead.title} fill className="object-cover object-top rounded-none" />
                 </div>
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-1">
@@ -428,7 +429,7 @@ export default async function Home() {
                 {worldStories.map((item) => (
                   <Link key={item._id} href={`/news/${item.slug}`} className="py-3.5 group flex items-start gap-4 no-underline">
                     <div className="relative w-28 h-20 shrink-0 border border-geotrexx-black overflow-hidden bg-white">
-                      <Image src={item.imageUrl} alt={item.title} fill className="object-cover rounded-none" />
+                      <Image src={item.imageUrl} alt={item.title} fill className="object-cover object-top rounded-none" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
@@ -465,8 +466,8 @@ export default async function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {trexxfieldBriefs.map((item) => (
               <Link key={item._id} href={`/news/${item.slug}`} className="group flex flex-col no-underline border-b border-geotrexx-black pb-4 sm:border-b-0 sm:pb-0">
-                <div className="relative w-full aspect-[3/2] mb-2.5 border border-geotrexx-black overflow-hidden bg-white">
-                  <Image src={item.imageUrl} alt={item.title} fill className="object-cover rounded-none" />
+                <div className="relative w-full aspect-[16/10] mb-2.5 border border-geotrexx-black overflow-hidden bg-white">
+                  <Image src={item.imageUrl} alt={item.title} fill className="object-cover object-top rounded-none" />
                 </div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-mono uppercase text-geotrexx-crimson font-bold">
@@ -496,8 +497,8 @@ export default async function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 gap-y-10">
             {feedArticles.map((article) => (
               <Link key={article._id} href={`/news/${article.slug}`} className="group flex flex-col h-full no-underline border-b border-geotrexx-black pb-4 sm:border-b-0 sm:pb-0">
-                <div className="relative w-full aspect-[3/2] mb-3 bg-white border border-geotrexx-black overflow-hidden">
-                  <Image src={article.imageUrl} alt={article.title} fill className="object-cover rounded-none" />
+                <div className="relative w-full aspect-[16/10] mb-3 bg-white border border-geotrexx-black overflow-hidden">
+                  <Image src={article.imageUrl} alt={article.title} fill className="object-cover object-top rounded-none" />
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
                   <span className="text-[10px] font-black uppercase tracking-widest text-geotrexx-crimson">

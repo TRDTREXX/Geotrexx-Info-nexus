@@ -28,6 +28,13 @@ function toSlug(str: string) {
     .replace(/^-|-$/g, '');
 }
 
+function formatSubLabel(raw: string) {
+  return raw
+    .replace(/[-_]+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
 function resolveExactDate(post: any): { timestamp: number; formatted: string } {
   const candidates = [post.publishedAt, post.publishDate, post.date, post._createdAt];
   for (const raw of candidates) {
@@ -56,70 +63,37 @@ const SECTION_CONFIG: Record<
     title: string;
     sanityCats: string[];
     titleFallback: string[];
-    defaultSubsections: { name: string; slug: string }[];
   }
 > = {
   ghana: {
     title: 'Ghana & National Affairs',
     sanityCats: ['ghana', 'national', 'entertainment'],
     titleFallback: ['accra', 'kumasi', 'tamale', 'uds', 'ghana'],
-    defaultSubsections: [
-      { name: 'National', slug: 'national' },
-      { name: 'Crime & Justice', slug: 'crime-justice' },
-      { name: 'Education', slug: 'education' },
-      { name: 'Regions', slug: 'regions' },
-    ],
   },
   politics: {
     title: 'Politics, Elections & Policy',
     sanityCats: ['politics', 'policy', 'opinion', 'governance'],
     titleFallback: ['parliament', 'speaker', 'bagbin', 'npp', 'ndc', 'election', 'delegate', 'minority', 'majority'],
-    defaultSubsections: [
-      { name: 'Elections', slug: 'elections' },
-      { name: 'Parliament', slug: 'parliament' },
-      { name: 'Public Policy', slug: 'policy' },
-      { name: 'Governance', slug: 'governance' },
-    ],
   },
   world: {
     title: 'World, Africa & Diaspora',
     sanityCats: ['world', 'africa', 'international', 'diaspora'],
     titleFallback: ['london', 'bronx', 'uk', 'usa', 'ecowas', 'nigeria', 'diaspora', 'american'],
-    defaultSubsections: [
-      { name: 'Africa', slug: 'africa' },
-      { name: 'Diaspora', slug: 'diaspora' },
-      { name: 'Global Affairs', slug: 'global' },
-    ],
   },
   business: {
     title: 'Business, Economy & Tech',
     sanityCats: ['business', 'stem', 'tech', 'economy', 'finance'],
     titleFallback: ['bank of ghana', 'bog', 'cedi', 'inflation', 'imf', 'gprtu', 'fare', 'economy', 'market', 'tech', 'ai ', 'software', 'telecom'],
-    defaultSubsections: [
-      { name: 'Economy & Markets', slug: 'economy' },
-      { name: 'Tech & STEM', slug: 'stem' },
-      { name: 'Corporate & Energy', slug: 'corporate' },
-    ],
   },
   sports: {
     title: 'TREXXfield Sports',
     sanityCats: ['sports', 'trexxfield', 'football'],
     titleFallback: ['barca', 'barcelona', 'arsenal', 'liverpool', 'ucl', 'premier league', 'black stars', 'gfa', 'football'],
-    defaultSubsections: [
-      { name: 'European Football', slug: 'european-football' },
-      { name: 'Black Stars & Africa', slug: 'african-football' },
-      { name: 'Tactics & Transfers', slug: 'tactics' },
-    ],
   },
   trexxfield: {
     title: 'TREXXfield Sports',
     sanityCats: ['sports', 'trexxfield', 'football'],
     titleFallback: ['barca', 'barcelona', 'arsenal', 'liverpool', 'ucl', 'premier league', 'black stars', 'gfa', 'football'],
-    defaultSubsections: [
-      { name: 'European Football', slug: 'european-football' },
-      { name: 'Black Stars & Africa', slug: 'african-football' },
-      { name: 'Tactics & Transfers', slug: 'tactics' },
-    ],
   },
 };
 
@@ -132,7 +106,21 @@ const SECTION_QUERY = `*[_type in ["article", "post"] && defined(slug.current) &
   "authorName": coalesce(author->name, "Orpheus Grant-Essilfie"),
   "authorSlug": author->slug.current,
   "rawCategory": lower(coalesce(category->title, category, section, "")),
-  "rawSubsection": lower(coalesce(subGhana, subPolitics, subSports, subStem, subWorld, subBusiness, subsection, "")),
+  "rawSubsection": coalesce(
+    subGhana,
+    subPolitics,
+    subSports,
+    subStem,
+    subEntertainment,
+    subWorld,
+    subOpinion,
+    subBusiness,
+    subsection->title,
+    subCategory->title,
+    subsection,
+    subCategory,
+    ""
+  ),
   publishedAt,
   publishDate,
   date,
@@ -154,7 +142,6 @@ export default async function CategorySectionPage({
     title: section.replace(/-/g, ' '),
     sanityCats: [normalizedSection],
     titleFallback: [normalizedSection],
-    defaultSubsections: [],
   };
 
   const matchedArticles = rawPosts
@@ -165,7 +152,7 @@ export default async function CategorySectionPage({
       if (bodyLen < 80 && sumLen < 40) return false;
 
       const cat = (post.rawCategory || '').trim();
-      const sub = (post.rawSubsection || '').trim();
+      const sub = String(post.rawSubsection || '').toLowerCase().trim();
       const title = (post.title || '').toLowerCase();
 
       if (cat || sub) {
@@ -176,20 +163,30 @@ export default async function CategorySectionPage({
     })
     .map((post) => {
       const dateObj = resolveExactDate(post);
+      const rawSub = String(post.rawSubsection || '').trim();
       return {
         ...post,
         exactTimestamp: dateObj.timestamp,
         formattedDate: dateObj.formatted,
+        cleanSub: rawSub ? formatSubLabel(rawSub) : '',
+        subSlug: rawSub ? toSlug(rawSub) : '',
         resolvedAuthorSlug: post.authorSlug || toSlug(post.authorName || 'Orpheus Grant-Essilfie'),
         cleanSummary: toPlainText(post.summary).trim() || `${toPlainText(post.body).slice(0, 180)}...`,
-        imageUrl: urlFor(post.mainImage).width(900).height(600).url(),
+        imageUrl: urlFor(post.mainImage).width(1000).height(625).fit('crop').auto('format').quality(85).url(),
       };
     })
     .sort((a, b) => b.exactTimestamp - a.exactTimestamp);
 
+  const subMap = new Map<string, string>();
+  for (const art of matchedArticles) {
+    if (art.subSlug && art.cleanSub && !subMap.has(art.subSlug)) {
+      subMap.set(art.subSlug, art.cleanSub);
+    }
+  }
+  const exactSubsections = Array.from(subMap.entries()).map(([slug, name]) => ({ slug, name }));
+
   const leadStory = matchedArticles[0];
   const restStories = matchedArticles.slice(1);
-  const subsections = config.defaultSubsections;
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white text-geotrexx-black">
@@ -204,7 +201,7 @@ export default async function CategorySectionPage({
             </h1>
           </div>
 
-          {subsections.length > 0 && (
+          {exactSubsections.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={`/category/${normalizedSection}`}
@@ -212,7 +209,7 @@ export default async function CategorySectionPage({
               >
                 All ({matchedArticles.length})
               </Link>
-              {subsections.map((subItem) => (
+              {exactSubsections.map((subItem) => (
                 <Link
                   key={subItem.slug}
                   href={`/category/${normalizedSection}/${subItem.slug}`}
@@ -238,15 +235,22 @@ export default async function CategorySectionPage({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10 mb-10 border-b-2 border-geotrexx-black">
               {leadStory.imageUrl && (
                 <div className="lg:col-span-7">
-                  <Link href={`/news/${leadStory.slug}`} className="block relative aspect-video border border-geotrexx-black overflow-hidden bg-white">
-                    <Image src={leadStory.imageUrl} alt={leadStory.title} fill className="object-cover rounded-none" priority />
+                  <Link href={`/news/${leadStory.slug}`} className="block relative aspect-[16/10] border border-geotrexx-black overflow-hidden bg-white">
+                    <Image src={leadStory.imageUrl} alt={leadStory.title} fill className="object-cover object-top rounded-none" priority />
                   </Link>
                 </div>
               )}
               <div className={leadStory.imageUrl ? 'lg:col-span-5 flex flex-col justify-center' : 'lg:col-span-12'}>
-                <span className="text-[11px] font-mono font-bold uppercase text-geotrexx-crimson mb-2 block">
-                  {leadStory.formattedDate}
-                </span>
+                <div className="flex items-center gap-2 mb-2">
+                  {leadStory.cleanSub && (
+                    <span className="bg-geotrexx-crimson text-white px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-widest">
+                      {leadStory.cleanSub}
+                    </span>
+                  )}
+                  <span className="text-[11px] font-mono font-bold uppercase text-gray-600">
+                    {leadStory.formattedDate}
+                  </span>
+                </div>
                 <Link href={`/news/${leadStory.slug}`} className="group no-underline">
                   <h2 className="text-2xl md:text-4xl font-black leading-tight text-geotrexx-black group-hover:text-geotrexx-crimson transition-colors mb-3">
                     {leadStory.title}
@@ -270,9 +274,14 @@ export default async function CategorySectionPage({
               <div key={article._id} className="flex flex-col border-b border-geotrexx-black pb-5">
                 <Link href={`/news/${article.slug}`} className="group block no-underline">
                   {article.imageUrl && (
-                    <div className="relative w-full aspect-[3/2] mb-3 border border-geotrexx-black overflow-hidden bg-white">
-                      <Image src={article.imageUrl} alt={article.title} fill className="object-cover rounded-none" />
+                    <div className="relative w-full aspect-[16/10] mb-3 border border-geotrexx-black overflow-hidden bg-white">
+                      <Image src={article.imageUrl} alt={article.title} fill className="object-cover object-top rounded-none" />
                     </div>
+                  )}
+                  {article.cleanSub && (
+                    <span className="text-[10px] font-black uppercase tracking-widest text-geotrexx-crimson block mb-1">
+                      {article.cleanSub}
+                    </span>
                   )}
                   <h3 className="text-lg font-bold leading-snug text-geotrexx-black group-hover:text-geotrexx-crimson transition-colors mb-2">
                     {article.title}

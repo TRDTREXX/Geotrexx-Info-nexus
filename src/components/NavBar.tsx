@@ -4,63 +4,25 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-const navTabs = [
-  { name: 'Top News', href: '/', subsections: [] },
-  {
-    name: 'Ghana',
-    href: '/category/ghana',
-    sectionSlug: 'ghana',
-    subsections: [
-      { name: 'National', slug: 'national' },
-      { name: 'Crime & Justice', slug: 'crime-justice' },
-      { name: 'Education', slug: 'education' },
-      { name: 'Regions', slug: 'regions' },
-    ],
-  },
-  {
-    name: 'Politics',
-    href: '/category/politics',
-    sectionSlug: 'politics',
-    subsections: [
-      { name: 'Elections', slug: 'elections' },
-      { name: 'Parliament', slug: 'parliament' },
-      { name: 'Public Policy', slug: 'policy' },
-      { name: 'Governance', slug: 'governance' },
-    ],
-  },
-  {
-    name: 'World',
-    href: '/category/world',
-    sectionSlug: 'world',
-    subsections: [
-      { name: 'Africa', slug: 'africa' },
-      { name: 'Diaspora', slug: 'diaspora' },
-      { name: 'Global Affairs', slug: 'global' },
-    ],
-  },
-  {
-    name: 'Business & Tech',
-    href: '/category/business',
-    sectionSlug: 'business',
-    subsections: [
-      { name: 'Economy & Markets', slug: 'economy' },
-      { name: 'Tech & STEM', slug: 'stem' },
-      { name: 'Corporate & Energy', slug: 'corporate' },
-    ],
-  },
-  {
-    name: 'TREXXfield',
-    href: '/category/sports',
-    sectionSlug: 'sports',
-    subsections: [
-      { name: 'European Football', slug: 'european-football' },
-      { name: 'Black Stars & Africa', slug: 'african-football' },
-      { name: 'Tactics & Transfers', slug: 'tactics' },
-    ],
-  },
+export interface SubItem {
+  name: string;
+  slug: string;
+}
+
+interface NavBarProps {
+  dynamicSubsections?: Record<string, SubItem[]>;
+}
+
+const BASE_TABS = [
+  { name: 'Top News', href: '/', sectionSlug: '' },
+  { name: 'Ghana', href: '/category/ghana', sectionSlug: 'ghana' },
+  { name: 'Politics', href: '/category/politics', sectionSlug: 'politics' },
+  { name: 'World', href: '/category/world', sectionSlug: 'world' },
+  { name: 'Business & Tech', href: '/category/business', sectionSlug: 'business' },
+  { name: 'TREXXfield', href: '/category/sports', sectionSlug: 'sports' },
 ];
 
-export default function NavBar() {
+export default function NavBar({ dynamicSubsections = {} }: NavBarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -80,15 +42,16 @@ export default function NavBar() {
   return (
     <div className="w-full lg:w-auto flex flex-col">
       <div className="flex items-center justify-between gap-2 w-full">
-        {/* Scrollable Tabs on Mobile + Full Row on Desktop */}
         <nav className="flex-1 overflow-x-auto lg:overflow-visible no-scrollbar py-0">
           <ul className="flex items-center space-x-4 sm:space-x-6 md:space-x-7 text-[11px] sm:text-xs md:text-sm font-extrabold uppercase tracking-wider text-geotrexx-black list-none m-0 p-0 min-w-max">
-            {navTabs.map((tab) => {
+            {BASE_TABS.map((tab) => {
               const isActive =
                 tab.href === '/'
                   ? pathname === '/'
                   : pathname.startsWith(tab.href) ||
                     (tab.sectionSlug === 'sports' && pathname.includes('/trexxfield'));
+
+              const subs = tab.sectionSlug ? dynamicSubsections[tab.sectionSlug] || [] : [];
 
               return (
                 <li key={tab.name} className="relative group shrink-0">
@@ -103,11 +66,10 @@ export default function NavBar() {
                     {tab.name}
                   </Link>
 
-                  {/* Desktop Hover Dropdown */}
-                  {tab.subsections && tab.subsections.length > 0 && (
-                    <div className="hidden lg:group-hover:block absolute left-0 top-full w-52 bg-white border-2 border-geotrexx-black border-t-[3px] border-t-geotrexx-crimson z-50 shadow-lg">
+                  {subs.length > 0 && (
+                    <div className="hidden lg:group-hover:block absolute left-0 top-full w-56 bg-white border-2 border-geotrexx-black border-t-[3px] border-t-geotrexx-crimson z-50 shadow-lg">
                       <ul className="divide-y divide-gray-200 list-none m-0 p-0">
-                        {tab.subsections.map((sub) => (
+                        {subs.map((sub) => (
                           <li key={sub.slug}>
                             <Link
                               href={`/category/${tab.sectionSlug}/${sub.slug}`}
@@ -126,7 +88,6 @@ export default function NavBar() {
           </ul>
         </nav>
 
-        {/* Search Button */}
         <div className="flex items-center shrink-0 pl-2">
           <button
             type="button"
@@ -142,7 +103,6 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* Expandable Instant Search Input Drawer */}
       {searchOpen && (
         <form
           onSubmit={handleSearchSubmit}

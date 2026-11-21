@@ -2,7 +2,6 @@ import { client } from '../../../sanity/lib/client';
 import { urlFor } from '../../../sanity/lib/image';
 import { PortableText } from '@portabletext/react';
 import { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import ShareBar from '../../../components/ShareBar';
 
@@ -30,9 +29,9 @@ function resolveInlineImageUrl(value: any): string | null {
     if (typeof value?.asset?.url === 'string') return value.asset.url;
     if (value?.asset?._ref || value?.asset?._id || value?.image?.asset) {
       const target = value.image?.asset ? value.image : value;
-      return urlFor(target).width(1200).auto('format').url();
+      return urlFor(target).width(1200).fit('max').auto('format').quality(85).url();
     }
-    return urlFor(value).width(1200).auto('format').url();
+    return urlFor(value).width(1200).fit('max').auto('format').quality(85).url();
   } catch (err) {
     console.error('Inline image resolution error:', err);
     return null;
@@ -48,7 +47,7 @@ const query = `*[_type in ["article", "post"] && slug.current == $slug][0]{
   _createdAt,
   _updatedAt,
   "categoryName": coalesce(category->title, category, section, "News"),
-  "subsectionName": coalesce(subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness, subsection),
+  "subsectionName": coalesce(subGhana, subPolitics, subSports, subStem, subEntertainment, subWorld, subOpinion, subBusiness, subsection->title, subCategory->title, subsection, subCategory),
   "authorName": author->name,
   "authorSlug": author->slug.current,
   "authorImage": author->image,
@@ -73,7 +72,7 @@ export async function generateMetadata({
   if (!article) return {};
 
   const imageUrl = article.mainImage
-    ? urlFor(article.mainImage).width(1200).height(630).format('jpg').quality(80).url()
+    ? urlFor(article.mainImage).width(1200).height(630).fit('crop').format('jpg').quality(80).url()
     : 'https://www.geotrexx.com/geotrexx-logo.png';
 
   const cleanSummary = toPlainText(article.summary);
@@ -115,17 +114,17 @@ function InlineImageRenderer({ value }: { value: any }) {
   const altText = value?.alt || caption || 'GEOTREXX report image';
 
   return (
-    <figure className="my-10 w-full clear-both">
-      <div className="w-full overflow-hidden border-2 border-geotrexx-black bg-white">
+    <figure className="my-8 mx-auto max-w-2xl clear-both">
+      <div className="w-full border border-geotrexx-black bg-gray-50 overflow-hidden flex justify-center">
         <img
           src={imgUrl}
           alt={altText}
           loading="lazy"
-          className="w-full h-auto block object-contain max-h-[750px] mx-auto"
+          className="w-full h-auto max-h-[540px] object-contain block"
         />
       </div>
       {(caption || attribution) && (
-        <figcaption className="mt-2.5 px-1 text-left border-l-2 border-[#C8102E] pl-3">
+        <figcaption className="mt-2.5 text-left border-l-2 border-[#C8102E] pl-3">
           {caption && (
             <p className="text-sm text-gray-800 leading-snug font-serif">
               {caption}
@@ -255,8 +254,12 @@ export default async function ArticlePage({
 
   const cleanSummary = toPlainText(article.summary);
   const authorAvatarUrl = article.authorImage
-    ? urlFor(article.authorImage).width(160).height(160).url()
+    ? urlFor(article.authorImage).width(160).height(160).fit('crop').auto('format').url()
     : undefined;
+
+  const mainImageUrl = article.mainImage
+    ? urlFor(article.mainImage).width(1400).fit('max').auto('format').quality(90).url()
+    : null;
 
   const exactDate =
     article.publishedAt || article.publishDate || article.date || article._createdAt;
@@ -278,7 +281,7 @@ export default async function ArticlePage({
     },
     headline: article.title,
     description: cleanSummary,
-    image: article.mainImage ? [urlFor(article.mainImage).url()] : [],
+    image: mainImageUrl ? [mainImageUrl] : [],
     datePublished: exactDate,
     dateModified: article._updatedAt || exactDate,
     author: {
@@ -321,7 +324,7 @@ export default async function ArticlePage({
             <>
               <span className="text-xs font-mono text-geotrexx-black">/</span>
               <span className="text-xs font-mono font-bold uppercase tracking-widest text-geotrexx-black">
-                {String(article.subsectionName).replace(/-/g, ' ')}
+                {String(article.subsectionName).replace(/[-_]+/g, ' ')}
               </span>
             </>
           )}
@@ -346,16 +349,16 @@ export default async function ArticlePage({
           publishedAt={formattedDate}
         />
 
-        {article.mainImage && (
-          <div className="relative w-full aspect-video my-8 border border-geotrexx-black bg-black overflow-hidden">
-            <Image
-              src={urlFor(article.mainImage).url()}
-              alt={article.title}
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
+        {mainImageUrl && (
+          <figure className="my-8 w-full">
+            <div className="w-full border border-geotrexx-black bg-white overflow-hidden">
+              <img
+                src={mainImageUrl}
+                alt={article.title}
+                className="w-full h-auto block mx-auto"
+              />
+            </div>
+          </figure>
         )}
 
         <div className="max-w-none text-geotrexx-black font-serif mt-8">
